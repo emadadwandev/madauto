@@ -1,61 +1,122 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Delivery Platform to Loyverse POS Integration
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+This project provides a robust and automated solution to integrate online food delivery platforms like Careem and Talabat directly with the Loyverse Point of Sale (POS) system. It listens for new order notifications via webhooks, processes them, and creates corresponding orders in Loyverse, eliminating the need for manual data entry.
 
-## About Laravel
+Built with the Laravel framework, it uses a queue-based system for reliability and scalability.
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+## Features
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+- **Automated Order Syncing**: Real-time order creation in Loyverse via webhooks.
+- **Multi-Platform Support**: Comes with built-in support for Careem and is designed to be easily extendable for other platforms like Talabat, Deliveroo, etc.
+- **Reliable Job Queues**: Ensures that every order is processed reliably, with failed jobs being automatically retried.
+- **Product Mapping**: A flexible system to map product SKUs/names from the delivery platform to the correct items in Loyverse.
+- **Secure Credential Management**: Safely stores API keys and tokens for third-party services.
+- **Detailed Logging**: Keeps a log of all sync activities and errors for easy monitoring and debugging.
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+## System Architecture
 
-## Learning Laravel
+1.  **Webhook Listener**: An API endpoint (`/api/webhook/{platform}`) receives incoming order data.
+2.  **Job Dispatch**: A new job (e.g., `ProcessCareemOrderJob`) is dispatched to the queue.
+3.  **Queue Worker**: A background worker picks up the job from the queue.
+4.  **Data Transformation**: The `OrderTransformerService` converts the platform-specific order data into a standardized format.
+5.  **Loyverse API**: The `LoyverseApiService` communicates with the Loyverse API to create the receipt.
+6.  **Logging**: The `SyncLog` model records the outcome of the transaction.
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+## Installation & Setup
 
-You may also try the [Laravel Bootcamp](https://bootcamp.laravel.com), where you will be guided through building a modern Laravel application from scratch.
+### Prerequisites
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+- PHP >= 8.2
+- Composer
+- Node.js & NPM
+- A database (MySQL, PostgreSQL, or SQLite)
+- Loyverse API Token
 
-## Laravel Sponsors
+### Steps
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+1.  **Clone the repository:**
+    ```bash
+    git clone https://github.com/your-username/careem-loyverse-integration.git
+    cd careem-loyverse-integration
+    ```
 
-### Premium Partners
+2.  **Install dependencies:**
+    ```bash
+    composer install
+    npm install && npm run build
+    ```
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+3.  **Environment Configuration:**
+    - Copy the example environment file:
+      ```bash
+      cp .env.example .env
+      ```
+    - Generate an application key:
+      ```bash
+      php artisan key:generate
+      ```
+    - Configure your `.env` file with the following:
+      - **Database credentials** (`DB_CONNECTION`, `DB_HOST`, etc.).
+      - **Queue driver** (it's recommended to use `database` or `redis` for production): `QUEUE_CONNECTION=database`
+      - **Loyverse API Token**: `LOYVERSE_API_TOKEN=your_loyverse_api_token`
 
-## Contributing
+4.  **Database Migration:**
+    Run the database migrations to create the necessary tables.
+    ```bash
+    php artisan migrate
+    ```
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+5.  **API Credentials Setup:**
+    You need to add the API credentials for the delivery platforms you want to integrate. You can do this by seeding the database.
+    - Edit `database/seeders/ApiCredentialSeeder.php` to include your platform's credentials.
+    - Run the seeder:
+      ```bash
+      php artisan db:seed --class=ApiCredentialSeeder
+      ```
 
-## Code of Conduct
+## Usage
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+### 1. Run the Queue Worker
 
-## Security Vulnerabilities
+For the integration to process orders, the queue worker must be running. For development, you can use:
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+```bash
+php artisan queue:work
+```
+
+For production, it is highly recommended to use a process manager like **Supervisor** to keep the queue worker running continuously. An example `queue-worker.conf` file is provided.
+
+### 2. Configure Webhooks
+
+In your delivery platform's admin panel (e.g., Careem), you need to set up a webhook to point to this application's endpoint. The endpoint URL will be:
+
+`https://your-domain.com/api/webhook/{platform}`
+
+For example, for Careem, the URL would be `https://your-domain.com/api/webhook/careem`.
+
+The application will then start listening for and processing new orders automatically.
+
+## Extending for a New Platform
+
+To add a new delivery platform (e.g., "Deliveroo"):
+
+1.  **Create a New Job**:
+    Create a job similar to `app/Jobs/ProcessCareemOrderJob.php`.
+    `php artisan make:job ProcessDeliverooOrderJob`
+
+2.  **Add a Webhook Route**:
+    In `routes/api.php`, add a new route for the platform:
+    ```php
+    Route::post('/webhook/deliveroo', function (Request $request) {
+        App\Jobs\ProcessDeliverooOrderJob::dispatch($request->all(), \'deliveroo\');
+        return response()->json([\'status\' => \'success\', \'message\' => \'Deliveroo order received and queued.\']);
+    });
+    ```
+
+3.  **Update Services (if needed)**:
+    - If the order data structure is significantly different, you may need to add a new transformation method in `app/Services/OrderTransformerService.php`.
+    - Update the `ProductMappingService` if product identification logic needs to change.
 
 ## License
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+This project is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
