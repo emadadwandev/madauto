@@ -1,3 +1,240 @@
+## [Date: 2025-10-22] - Super Admin Tenant Management Enhancements & Regional Support
+
+### Added - Comprehensive Arab Countries Support
+- **All Arab League Countries Timezones** (22 countries)
+  - Files:
+    - `resources/views/super-admin/tenants/create.blade.php` (modified)
+    - `resources/views/super-admin/tenants/edit.blade.php` (modified)
+  - Regions Covered:
+    - **Gulf Countries**: UAE, Saudi Arabia, Kuwait, Qatar, Bahrain, Oman
+    - **Levant Countries**: Jordan, Lebanon, Syria, Palestine (Gaza & Hebron)
+    - **Iraq & Yemen**: Iraq, Yemen
+    - **North Africa**: Egypt, Libya, Tunisia, Algeria, Morocco
+    - **East & Horn of Africa**: Sudan, Somalia, Djibouti, Comoros
+    - **West Africa**: Mauritania
+  - Features:
+    - Organized by optgroups for easy navigation
+    - UTC offset displayed for each timezone
+    - Default: Asia/Dubai (UTC+4)
+
+- **All Arab League Countries Currencies** (19 currencies)
+  - Files: Same as above
+  - Currencies Added:
+    - **Gulf**: AED, SAR, KWD, QAR, BHD, OMR
+    - **Levant**: JOD, LBP, SYP, ILS
+    - **Iraq & Yemen**: IQD, YER
+    - **North Africa**: EGP, LYD, TND, DZD, MAD
+    - **East & Horn**: SDG, SOS, DJF, KMF
+    - **West Africa**: MRU
+  - Features:
+    - Full currency names and symbols (Arabic & Latin)
+    - Organized by geographic regions
+    - Default: AED (UAE Dirham)
+
+### Added - Tenant Creation System
+- **Tenant Creation Form** with comprehensive setup options
+  - Files: `resources/views/super-admin/tenants/create.blade.php` (created)
+  - Features:
+    - Basic information (name, email, subdomain, password)
+    - Subscription plan selection with trial period configuration
+    - Platform settings (Careem, Talabat) with enable/disable controls
+    - Auto-accept order settings per platform
+    - Additional settings (timezone, currency, language)
+    - Notification preferences (new orders, failed sync, usage limits)
+  - Validation: Subdomain uniqueness, email validation, password strength
+
+- **TenantController Enhancement** with create/store methods
+  - Files: `app/Http/Controllers/SuperAdmin/TenantController.php` (modified)
+  - New Methods:
+    - `create()`: Display tenant creation form with active subscription plans
+    - `store()`: Handle tenant creation with transaction support
+  - Features:
+    - Automatic tenant admin user creation
+    - Role assignment (tenant_admin)
+    - Subscription creation with trial period
+    - Settings structure from form inputs
+  - Database: Transaction-based creation for data integrity
+
+### Changed - Tenant Settings Management
+- **JSON to Form Conversion** for better UX
+  - Files: `resources/views/super-admin/tenants/edit.blade.php` (modified)
+  - Replaced: JSON textarea with structured form inputs
+  - New Controls:
+    - Platform enablement checkboxes (Careem, Talabat)
+    - Auto-accept order toggles per platform
+    - Timezone dropdown (UTC, Asia/Dubai, Asia/Riyadh, etc.)
+    - Currency dropdown (AED, SAR, KWD, QAR, BHD, USD)
+    - Language selection (English, Arabic)
+    - Notification preferences checkboxes
+  - Storage: All settings stored as JSON in database `settings` field
+  - Benefits: User-friendly interface while maintaining flexible JSON storage
+
+- **TenantController Update Method** enhancement
+  - Files: `app/Http/Controllers/SuperAdmin/TenantController.php` (modified)
+  - Changed: `update()` method to process structured form inputs
+  - Features:
+    - Build settings array from individual form fields
+    - Support for checkbox arrays (enabled_platforms)
+    - Boolean conversion for auto-accept and notification settings
+    - Default value handling for optional fields
+  - Validation: Platform validation, timezone/currency options
+
+### Added - Tenant Model Helper Methods
+- **Platform Settings Helpers** for easy access
+  - Files: `app/Models/Tenant.php` (modified)
+  - New Methods:
+    - `isPlatformEnabled($platform)`: Check if platform is enabled
+    - `isAutoAcceptEnabled($platform)`: Check auto-accept setting per platform
+    - `getEnabledPlatforms()`: Get array of enabled platforms
+    - `getSetting($key, $default)`: Get setting with default value
+    - `updateSetting($key, $value)`: Update specific setting
+    - `getTimezone()`: Get tenant timezone (default: Asia/Dubai)
+    - `getCurrency()`: Get tenant currency (default: AED)
+    - `getLanguage()`: Get tenant language (default: en)
+  - Benefits: Cleaner code, consistent access pattern, type safety
+
+### Changed - Tenant Index View
+- **Create Tenant Button** added to index page
+  - Files: `resources/views/super-admin/tenants/index.blade.php` (modified)
+  - Addition: "Create Tenant" button in page header
+  - Design: Blue primary button with plus icon
+  - Route: Links to `super-admin.tenants.create`
+
+### Changed - Super Admin Routes
+- **Tenant Management Routes** expansion
+  - Files: `routes/super-admin.php` (modified)
+  - Added Routes:
+    - `GET /tenants/create`: Display creation form
+    - `POST /tenants`: Store new tenant
+  - Organization: Routes ordered logically (list → create → show → edit → update)
+  - Security: All routes protected by `auth`, `verified`, `super-admin` middleware
+
+### Technical Implementation
+- **Platform Control Architecture**:
+  - Super admin can enable/disable platforms per tenant
+  - Auto-accept settings control order processing behavior
+  - Settings stored as structured JSON for flexibility
+  - Frontend presents user-friendly form interface
+  - Backend validates and structures data consistently
+
+- **Tenant Creation Workflow**:
+  1. Super admin fills creation form
+  2. System validates all inputs
+  3. Database transaction begins
+  4. Tenant record created with settings
+  5. Admin user created and linked to tenant
+  6. User assigned tenant_admin role
+  7. Subscription created based on selected plan
+  8. Transaction commits (or rolls back on error)
+  9. Success message with redirect to tenant details
+
+- **Settings Structure** (JSON in database):
+  ```json
+  {
+    "enabled_platforms": ["careem", "talabat"],
+    "auto_accept_careem": true,
+    "auto_accept_talabat": false,
+    "timezone": "Asia/Dubai",
+    "currency": "AED",
+    "language": "en",
+    "notify_on_new_order": true,
+    "notify_on_failed_sync": true,
+    "notify_on_usage_limit": true
+  }
+  ```
+
+### Fixed - Tenant Edit Form Errors
+- **Missing Domain Field** in edit view
+  - Files: `resources/views/super-admin/tenants/edit.blade.php` (modified)
+  - Issue: "Undefined array key 'domain'" error when editing tenants
+  - Fix: Added custom domain input field with null coalescing operator
+  - Result: Tenants can now be edited without errors
+
+- **Controller Null Safety** improvements
+  - Files: `app/Http/Controllers/SuperAdmin/TenantController.php` (modified)
+  - Added: Null coalescing operators for nullable fields (domain, trial_ends_at)
+  - Result: More robust handling of optional fields
+
+- **Missing Subscription Usage Relationship**
+  - Files: `app/Models/Subscription.php` (modified)
+  - Issue: "Call to undefined relationship [usage] on model [App\Models\Subscription]"
+  - Problem: SubscriptionController calling `->usage` but model only had `->usageRecords`
+  - Fix: Added `usage()` method as an alias to `usageRecords()` relationship
+  - Result: Subscription views now load without relationship errors
+
+- **NotificationController Middleware Error**
+  - Files:
+    - `app/Http/Controllers/Controller.php` (modified)
+    - `app/Http/Controllers/Dashboard/NotificationController.php` (modified)
+  - Issue: "Call to undefined method NotificationController::middleware()"
+  - Problem: Laravel 11 base controller structure doesn't include middleware() method by default
+  - Fix:
+    - Updated base Controller to use Laravel 11 minimal structure
+    - Removed middleware call from NotificationController constructor (routes already protected)
+  - Result: Notification settings page loads without errors
+
+- **Tenant Admin Role Assignment Issue - 403 Forbidden on Team Page**
+  - Files: `app/Http/Controllers/SuperAdmin/TenantController.php` (modified)
+  - Issue: Users created by super admin couldn't access team management (403 Forbidden error)
+  - Root Cause:
+    - Role was attached without `tenant_id` in the pivot table
+    - TeamPolicy checks `hasRole('tenant_admin', $tenant)` which requires tenant_id in pivot
+    - Database query: `SELECT * FROM role_user WHERE user_id = ? AND role_id = ? AND tenant_id = ?`
+    - Missing tenant_id caused role check to fail
+  - Fix:
+    - Changed from `$user->roles()->attach($tenantAdminRole->id)`
+    - To: `$user->assignRole($tenantAdminRole, $tenant->id)`
+    - Uses Role::TENANT_ADMIN constant for consistency
+    - The `assignRole()` method properly includes tenant_id in pivot data
+  - Result:
+    - Tenant admin users can now access team management
+    - Proper role-based authorization working correctly
+    - Role checks with tenant context functioning as designed
+  - Note: RegistrationController already implements this correctly (lines 83-85)
+
+- **Missing ApiCredentialRepository Methods**
+  - Files: `app/Repositories/ApiCredentialRepository.php` (modified)
+  - Issue: "Call to undefined method ApiCredentialRepository::getByService()"
+  - Problem: OnboardingController called missing repository methods
+  - Fix: Added missing repository methods:
+    - `getByService($service)`: Returns ApiCredential model for a service
+    - `upsert($service, $type, $value, $tenantId)`: Create or update credentials
+    - `deleteByService($service, $tenantId)`: Delete credentials by service
+  - Result:
+    - Onboarding flow works correctly
+    - Credential management methods available for future use
+    - Proper separation of concerns with repository pattern
+
+- **Onboarding Route Subdomain Parameter Issue**
+  - Files: `resources/views/dashboard/onboarding/index.blade.php` (modified)
+  - Issue: "Missing required parameter for [Route: dashboard.onboarding.loyverse.save] [URI: dashboard/onboarding/loyverse/save] [Missing parameter: subdomain]"
+  - Problem:
+    - Onboarding routes defined in `routes/tenant.php` with subdomain pattern `{subdomain}.{$domain}`
+    - View route() calls didn't pass subdomain parameter explicitly
+    - Laravel requires subdomain parameter when generating URLs for tenant routes
+  - Fix: Updated all route() calls to explicitly pass subdomain parameter:
+    - Line 110: `route('dashboard.onboarding.loyverse.save', ['subdomain' => tenant()->subdomain])`
+    - Line 126: `route('dashboard.onboarding.skip', ['subdomain' => tenant()->subdomain])`
+    - Line 190: `route('dashboard.onboarding.webhook.generate', ['subdomain' => tenant()->subdomain])`
+    - Line 194: `route('dashboard.onboarding.skip', ['subdomain' => tenant()->subdomain])` (duplicate skip link)
+    - Line 266: `route('dashboard.onboarding.complete', ['subdomain' => tenant()->subdomain])`
+  - Result:
+    - Users can complete onboarding flow from signup without errors
+    - All onboarding forms now submit to correct tenant-scoped URLs
+    - Subdomain routing works correctly throughout onboarding wizard
+
+### Benefits
+- **Improved UX**: Form inputs are more intuitive than JSON editing
+- **Better Validation**: Field-level validation prevents errors
+- **Platform Control**: Super admin has fine-grained platform management
+- **Flexibility**: JSON storage allows for future setting additions
+- **Consistency**: Helper methods ensure consistent setting access
+- **Safety**: Transaction-based tenant creation prevents partial failures
+- **Scalability**: Settings structure supports multi-platform growth
+- **Robust**: Proper null handling prevents undefined key errors
+
+---
+
 ## [Date: 2025-10-22] - Phase 6 Complete: Tenant Dashboard Enhancements & Phase 7 Testing Implementation
 
 ### Added - Complete Team Management System (Phase 6)

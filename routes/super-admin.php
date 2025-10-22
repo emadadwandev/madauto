@@ -24,6 +24,8 @@ Route::middleware(['auth', 'verified', 'super-admin'])->group(function () {
     // Tenant Management
     Route::prefix('tenants')->name('super-admin.tenants.')->group(function () {
         Route::get('/', [TenantController::class, 'index'])->name('index');
+        Route::get('/create', [TenantController::class, 'create'])->name('create');
+        Route::post('/', [TenantController::class, 'store'])->name('store');
         Route::get('/{tenant}', [TenantController::class, 'show'])->name('show');
         Route::get('/{tenant}/edit', [TenantController::class, 'edit'])->name('edit');
         Route::put('/{tenant}', [TenantController::class, 'update'])->name('update');

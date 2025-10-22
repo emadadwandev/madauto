@@ -147,7 +147,7 @@
                                             @endif
                                         </td>
                                         <td class="px-6 py-4 whitespace-nowrap">
-                                            <form method="POST" action="{{ route('product-mappings.toggle', ['mapping' => $mapping, 'subdomain' => request()->route('subdomain')]) }}" class="inline">
+                                            <form method="POST" action="{{ route('product-mappings.toggle', ['productMapping' => $mapping, 'subdomain' => request()->route('subdomain')]) }}" class="inline">
                                                 @csrf
                                                 <button type="submit" class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full {{ $mapping->is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800' }}">
                                                     {{ $mapping->is_active ? 'Active' : 'Inactive' }}
@@ -155,8 +155,8 @@
                                             </form>
                                         </td>
                                         <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                            <a href="{{ route('product-mappings.edit', ['mapping' => $mapping, 'subdomain' => request()->route('subdomain')]) }}" class="text-indigo-600 hover:text-indigo-900 mr-3">Edit</a>
-                                            <form method="POST" action="{{ route('product-mappings.destroy', ['mapping' => $mapping, 'subdomain' => request()->route('subdomain')]) }}" class="inline" onsubmit="return confirm('Are you sure?')">
+                                            <a href="{{ route('product-mappings.edit', ['productMapping' => $mapping, 'subdomain' => request()->route('subdomain')]) }}" class="text-indigo-600 hover:text-indigo-900 mr-3">Edit</a>
+                                            <form method="POST" action="{{ route('product-mappings.destroy', ['productMapping' => $mapping, 'subdomain' => request()->route('subdomain')]) }}" class="inline" onsubmit="return confirm('Are you sure?')">
                                                 @csrf
                                                 @method('DELETE')
                                                 <button type="submit" class="text-red-600 hover:text-red-900">Delete</button>

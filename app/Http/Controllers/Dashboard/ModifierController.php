@@ -74,7 +74,7 @@ class ModifierController extends Controller
 
         Modifier::create($validated);
 
-        return redirect()->route('dashboard.modifiers.index')
+        return redirect()->route('dashboard.modifiers.index', ['subdomain' => request()->route('subdomain')])
             ->with('success', 'Modifier created successfully.');
     }
 
@@ -104,7 +104,7 @@ class ModifierController extends Controller
 
         $modifier->update($validated);
 
-        return redirect()->route('dashboard.modifiers.index')
+        return redirect()->route('dashboard.modifiers.index', ['subdomain' => request()->route('subdomain')])
             ->with('success', 'Modifier updated successfully.');
     }
 
@@ -115,7 +115,7 @@ class ModifierController extends Controller
     {
         $modifier->delete();
 
-        return redirect()->route('dashboard.modifiers.index')
+        return redirect()->route('dashboard.modifiers.index', ['subdomain' => request()->route('subdomain')])
             ->with('success', 'Modifier deleted successfully.');
     }
 
@@ -140,28 +140,49 @@ class ModifierController extends Controller
                 return back()->with('error', 'Loyverse API credentials not configured. Please configure them in Settings.');
             }
 
-            // Fetch all items with their modifiers
-            $items = $this->loyverseApiService->getAllItems();
+            // Fetch all modifiers with their options from the dedicated /modifiers endpoint
+            $modifiers = $this->loyverseApiService->getAllModifiers(true); // Force refresh
 
             $syncedCount = 0;
-            $modifiersProcessed = [];
 
-            foreach ($items as $item) {
-                if (isset($item['modifiers']) && is_array($item['modifiers'])) {
-                    foreach ($item['modifiers'] as $modifierData) {
-                        $modifierId = $modifierData['modifier_id'] ?? $modifierData['id'] ?? null;
+            foreach ($modifiers as $modifierData) {
+                $modifierId = $modifierData['id'] ?? null;
+                $modifierName = $modifierData['name'] ?? 'Unnamed Modifier';
 
-                        if ($modifierId && ! in_array($modifierId, $modifiersProcessed)) {
+                if (! $modifierId) {
+                    Log::warning('Skipping modifier without ID', ['modifier_data' => $modifierData]);
+                    continue;
+                }
+
+                // Sync the modifier itself (without options initially)
+                $modifier = Modifier::syncFromLoyverse([
+                    'id' => $modifierId,
+                    'name' => $modifierName,
+                    'price' => 0, // Will be set per option below
+                ]);
+
+                // Sync modifier options if they exist
+                if (isset($modifierData['modifier_options']) && is_array($modifierData['modifier_options'])) {
+                    foreach ($modifierData['modifier_options'] as $optionData) {
+                        $optionId = $optionData['id'] ?? null;
+                        $optionName = $optionData['name'] ?? 'Unnamed Option';
+                        $optionPrice = $optionData['price'] ?? 0;
+
+                        if ($optionId) {
+                            // Create a separate modifier entry for each option
+                            // This matches the current database structure
                             Modifier::syncFromLoyverse([
-                                'id' => $modifierId,
-                                'name' => $modifierData['modifier_name'] ?? $modifierData['name'] ?? 'Unnamed Modifier',
-                                'price' => $modifierData['price'] ?? 0,
+                                'id' => $optionId,
+                                'name' => $modifierName.' - '.$optionName,
+                                'price' => $optionPrice,
                             ]);
 
-                            $modifiersProcessed[] = $modifierId;
                             $syncedCount++;
                         }
                     }
+                } else {
+                    // If no options, count the modifier itself
+                    $syncedCount++;
                 }
             }
 

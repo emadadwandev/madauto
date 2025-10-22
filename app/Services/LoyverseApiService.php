@@ -32,6 +32,8 @@ class LoyverseApiService
 
     const CACHE_TTL_CUSTOMERS = 3600; // 1 hour
 
+    const CACHE_TTL_MODIFIERS = 3600; // 1 hour
+
     public function __construct(ApiCredentialRepository $apiCredentialRepository)
     {
         $this->baseUrl = config('loyverse.api_url', 'https://api.loyverse.com');
@@ -430,6 +432,55 @@ class LoyverseApiService
     }
 
     /**
+     * Get modifiers with pagination.
+     */
+    public function getModifiers(?string $cursor = null, int $limit = 250): array
+    {
+        $params = ['limit' => $limit];
+
+        if ($cursor) {
+            $params['cursor'] = $cursor;
+        }
+
+        $queryString = http_build_query($params);
+
+        return $this->makeRequest('GET', "/v1.0/modifiers?{$queryString}");
+    }
+
+    /**
+     * Get all modifiers with caching.
+     */
+    public function getAllModifiers(bool $forceRefresh = false): array
+    {
+        $cacheKey = 'loyverse:modifiers:all';
+
+        if ($forceRefresh) {
+            Cache::forget($cacheKey);
+        }
+
+        return Cache::remember($cacheKey, self::CACHE_TTL_MODIFIERS, function () {
+            $allModifiers = [];
+            $cursor = null;
+
+            do {
+                $response = $this->getModifiers($cursor);
+                $allModifiers = array_merge($allModifiers, $response['modifiers'] ?? []);
+                $cursor = $response['cursor'] ?? null;
+            } while ($cursor);
+
+            return $allModifiers;
+        });
+    }
+
+    /**
+     * Get modifier by ID.
+     */
+    public function getModifier(string $modifierId): array
+    {
+        return $this->makeRequest('GET', "/v1.0/modifiers/{$modifierId}");
+    }
+
+    /**
      * Clear all cached data.
      */
     public function clearCache(): void
@@ -441,6 +492,7 @@ class LoyverseApiService
             'loyverse:employees:all',
             'loyverse:payment_types:all',
             'loyverse:taxes:all',
+            'loyverse:modifiers:all',
             'loyverse:customer:careem',
             'loyverse:customer:talabat',
         ];

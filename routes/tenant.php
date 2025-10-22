@@ -350,6 +350,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // Onboarding Wizard
     Route::prefix('dashboard/onboarding')->name('dashboard.onboarding.')->group(function () {
         Route::get('/', [OnboardingController::class, 'index'])->name('index');
+        Route::post('/account-settings/save', [OnboardingController::class, 'saveAccountSettings'])->name('account-settings.save');
+        Route::post('/location/save', [OnboardingController::class, 'saveLocation'])->name('location.save');
         Route::post('/loyverse/save', [OnboardingController::class, 'saveLoyverseToken'])->name('loyverse.save');
         Route::post('/webhook/generate', [OnboardingController::class, 'generateWebhookSecret'])->name('webhook.generate');
         Route::post('/complete', [OnboardingController::class, 'complete'])->name('complete');

@@ -73,7 +73,7 @@ class SubscriptionController extends Controller
             // Check if tenant already has a subscription
             if ($tenant->subscription && $tenant->subscription->canUse()) {
                 return redirect()
-                    ->route('dashboard.subscription.index')
+                    ->route('dashboard.subscription.index', ['subdomain' => request()->route('subdomain')])
                     ->with('error', 'You already have an active subscription.');
             }
 
@@ -81,7 +81,7 @@ class SubscriptionController extends Controller
             $subscription = $this->subscriptionService->subscribe($tenant, $plan, true);
 
             return redirect()
-                ->route('dashboard.subscription.index')
+                ->route('dashboard.subscription.index', ['subdomain' => request()->route('subdomain')])
                 ->with('success', 'Successfully subscribed to '.$plan->name.' plan! Your 14-day trial has started.');
 
         } catch (\Exception $e) {
@@ -128,7 +128,7 @@ class SubscriptionController extends Controller
                 : 'Successfully scheduled downgrade to '.$newPlan->name.' plan (effective at period end).';
 
             return redirect()
-                ->route('dashboard.subscription.index')
+                ->route('dashboard.subscription.index', ['subdomain' => request()->route('subdomain')])
                 ->with('success', $message);
 
         } catch (\Exception $e) {
@@ -167,7 +167,7 @@ class SubscriptionController extends Controller
                 : 'Your subscription will be cancelled at the end of your billing period.';
 
             return redirect()
-                ->route('dashboard.subscription.index')
+                ->route('dashboard.subscription.index', ['subdomain' => request()->route('subdomain')])
                 ->with('success', $message);
 
         } catch (\Exception $e) {
@@ -199,7 +199,7 @@ class SubscriptionController extends Controller
             $this->subscriptionService->resume($subscription);
 
             return redirect()
-                ->route('dashboard.subscription.index')
+                ->route('dashboard.subscription.index', ['subdomain' => request()->route('subdomain')])
                 ->with('success', 'Your subscription has been resumed!');
 
         } catch (\Exception $e) {
@@ -279,8 +279,8 @@ class SubscriptionController extends Controller
         try {
             return $tenant->newSubscription('default', $request->plan_id)
                 ->checkout([
-                    'success_url' => route('dashboard.subscription.index').'?session_id={CHECKOUT_SESSION_ID}',
-                    'cancel_url' => route('dashboard.subscription.plans'),
+                    'success_url' => route('dashboard.subscription.index', ['subdomain' => request()->route('subdomain')]).'?session_id={CHECKOUT_SESSION_ID}',
+                    'cancel_url' => route('dashboard.subscription.plans', ['subdomain' => request()->route('subdomain')]),
                 ]);
         } catch (\Exception $e) {
             Log::error('Checkout session creation failed', [

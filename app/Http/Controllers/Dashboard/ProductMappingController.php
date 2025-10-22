@@ -99,7 +99,7 @@ class ProductMappingController extends Controller
         );
 
         return redirect()
-            ->route('product-mappings.index')
+            ->route('product-mappings.index', ['subdomain' => request()->route('subdomain')])
             ->with('success', 'Product mapping created successfully');
     }
 
@@ -146,7 +146,7 @@ class ProductMappingController extends Controller
         $this->productMappingService->clearCache();
 
         return redirect()
-            ->route('product-mappings.index')
+            ->route('product-mappings.index', ['subdomain' => request()->route('subdomain')])
             ->with('success', 'Product mapping updated successfully');
     }
 
@@ -161,7 +161,7 @@ class ProductMappingController extends Controller
         $this->productMappingService->clearCache();
 
         return redirect()
-            ->route('product-mappings.index')
+            ->route('product-mappings.index', ['subdomain' => request()->route('subdomain')])
             ->with('success', 'Product mapping deleted successfully');
     }
 

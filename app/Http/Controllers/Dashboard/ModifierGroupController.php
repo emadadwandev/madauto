@@ -88,7 +88,7 @@ class ModifierGroupController extends Controller
             $modifierGroup->modifiers()->sync($syncData);
         }
 
-        return redirect()->route('dashboard.modifier-groups.index')
+        return redirect()->route('dashboard.modifier-groups.index', ['subdomain' => request()->route('subdomain')])
             ->with('success', 'Modifier group created successfully.');
     }
 
@@ -154,7 +154,7 @@ class ModifierGroupController extends Controller
             $modifierGroup->modifiers()->detach();
         }
 
-        return redirect()->route('dashboard.modifier-groups.index')
+        return redirect()->route('dashboard.modifier-groups.index', ['subdomain' => request()->route('subdomain')])
             ->with('success', 'Modifier group updated successfully.');
     }
 
@@ -165,7 +165,7 @@ class ModifierGroupController extends Controller
     {
         $modifierGroup->delete();
 
-        return redirect()->route('dashboard.modifier-groups.index')
+        return redirect()->route('dashboard.modifier-groups.index', ['subdomain' => request()->route('subdomain')])
             ->with('success', 'Modifier group deleted successfully.');
     }
 

@@ -5,7 +5,7 @@
                 {{ __('Choose Your Plan') }}
             </h2>
             @if($currentSubscription)
-                <a href="{{ route('dashboard.subscription.index') }}" class="text-sm text-gray-600 hover:text-gray-900">
+                <a href="{{ route('dashboard.subscription.index', ['subdomain' => request()->route('subdomain')]) }}" class="text-sm text-gray-600 hover:text-gray-900">
                     &larr; Back to Subscription
                 </a>
             @endif
@@ -99,7 +99,7 @@
                                             Current Plan
                                         </button>
                                     @else
-                                        <form method="POST" action="{{ route('dashboard.subscription.change-plan') }}">
+                                        <form method="POST" action="{{ route('dashboard.subscription.change-plan', ['subdomain' => request()->route('subdomain')]) }}">
                                             @csrf
                                             <input type="hidden" name="plan_id" value="{{ $plan->id }}">
                                             <button type="submit"
@@ -116,7 +116,7 @@
                                         </form>
                                     @endif
                                 @else
-                                    <form method="POST" action="{{ route('dashboard.subscription.subscribe') }}">
+                                    <form method="POST" action="{{ route('dashboard.subscription.subscribe', ['subdomain' => request()->route('subdomain')]) }}">
                                         @csrf
                                         <input type="hidden" name="plan_id" value="{{ $plan->id }}">
                                         <button type="submit"

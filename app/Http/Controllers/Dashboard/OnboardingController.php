@@ -40,11 +40,97 @@ class OnboardingController extends Controller
         $careemCredential = $this->apiCredentialRepository->getByService('careem');
 
         $onboardingStatus = [
+            'account_configured' => $tenant->getSetting('currency') && $tenant->getSetting('timezone'),
+            'location_created' => $tenant->locations()->exists(),
             'loyverse_connected' => $loyverseCredential && $loyverseCredential->is_active,
             'careem_configured' => $careemCredential && $careemCredential->is_active,
         ];
 
-        return view('dashboard.onboarding.index', compact('onboardingStatus', 'loyverseCredential', 'careemCredential'));
+        // Pass additional data for forms
+        $currencies = supportedCurrencies();
+        $timezones = supportedTimezones();
+
+        return view('dashboard.onboarding.index', compact('onboardingStatus', 'loyverseCredential', 'careemCredential', 'currencies', 'timezones', 'tenant'));
+    }
+
+    /**
+     * Save account settings (currency and timezone).
+     */
+    public function saveAccountSettings(Request $request)
+    {
+        $request->validate([
+            'currency' => 'required|string|in:' . implode(',', array_keys(supportedCurrencies())),
+            'timezone' => 'required|string|timezone',
+        ]);
+
+        try {
+            $tenant = app(TenantContext::class)->get();
+
+            // Update tenant settings
+            $tenant->updateSetting('currency', $request->currency);
+            $tenant->updateSetting('timezone', $request->timezone);
+
+            return redirect()
+                ->route('dashboard.onboarding.index', ['subdomain' => request()->route('subdomain')])
+                ->with('success', 'Account settings saved successfully!');
+
+        } catch (\Exception $e) {
+            Log::error('Account settings save failed during onboarding', [
+                'error' => $e->getMessage(),
+            ]);
+
+            return back()->with('error', 'Failed to save account settings. Please try again.');
+        }
+    }
+
+    /**
+     * Save location information.
+     */
+    public function saveLocation(Request $request)
+    {
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'address_line1' => 'required|string|max:255',
+            'address_line2' => 'nullable|string|max:255',
+            'city' => 'required|string|max:100',
+            'state' => 'nullable|string|max:100',
+            'postal_code' => 'nullable|string|max:20',
+            'country' => 'required|string|max:2',
+            'phone' => 'nullable|string|max:20',
+            'email' => 'nullable|email|max:255',
+            'platforms' => 'required|array|min:1',
+            'platforms.*' => 'in:careem,talabat',
+        ]);
+
+        try {
+            $tenant = app(TenantContext::class)->get();
+
+            // Create the location
+            $tenant->locations()->create([
+                'name' => $request->name,
+                'address_line1' => $request->address_line1,
+                'address_line2' => $request->address_line2,
+                'city' => $request->city,
+                'state' => $request->state,
+                'postal_code' => $request->postal_code,
+                'country' => $request->country,
+                'phone' => $request->phone,
+                'email' => $request->email,
+                'platforms' => $request->platforms,
+                'is_active' => true,
+            ]);
+
+            return redirect()
+                ->route('dashboard.onboarding.index', ['subdomain' => request()->route('subdomain')])
+                ->with('success', 'Location created successfully!');
+
+        } catch (\Exception $e) {
+            Log::error('Location creation failed during onboarding', [
+                'error' => $e->getMessage(),
+            ]);
+
+            return back()->withInput()->with('error', 'Failed to create location. Please try again.');
+        }
     }
 
     /**
@@ -71,7 +157,7 @@ class OnboardingController extends Controller
             ]);
 
             return redirect()
-                ->route('dashboard.onboarding.index')
+                ->route('dashboard.onboarding.index', ['subdomain' => request()->route('subdomain')])
                 ->with('success', 'Loyverse connected successfully! Connection test passed.');
 
         } catch (\Exception $e) {
@@ -98,7 +184,7 @@ class OnboardingController extends Controller
             ]);
 
             return redirect()
-                ->route('dashboard.onboarding.index')
+                ->route('dashboard.onboarding.index', ['subdomain' => request()->route('subdomain')])
                 ->with('success', 'Careem webhook configured successfully!');
 
         } catch (\Exception $e) {
@@ -117,9 +203,16 @@ class OnboardingController extends Controller
     {
         $tenant = app(TenantContext::class)->get();
 
-        // Verify that at least Loyverse is connected
-        $loyverseCredential = $this->apiCredentialRepository->getByService('loyverse');
+        // Verify minimum requirements
+        if (!$tenant->getSetting('currency') || !$tenant->getSetting('timezone')) {
+            return back()->with('error', 'Please configure your account settings before completing onboarding.');
+        }
 
+        if (!$tenant->locations()->exists()) {
+            return back()->with('error', 'Please create at least one location before completing onboarding.');
+        }
+
+        $loyverseCredential = $this->apiCredentialRepository->getByService('loyverse');
         if (! $loyverseCredential || ! $loyverseCredential->is_active) {
             return back()->with('error', 'Please connect your Loyverse account before completing onboarding.');
         }

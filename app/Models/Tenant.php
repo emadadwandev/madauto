@@ -113,4 +113,72 @@ class Tenant extends Model
     {
         $this->update(['onboarding_completed_at' => now()]);
     }
+
+    /**
+     * Check if a platform is enabled for this tenant.
+     */
+    public function isPlatformEnabled(string $platform): bool
+    {
+        $enabledPlatforms = $this->settings['enabled_platforms'] ?? [];
+        return in_array($platform, $enabledPlatforms);
+    }
+
+    /**
+     * Check if auto-accept is enabled for a specific platform.
+     */
+    public function isAutoAcceptEnabled(string $platform): bool
+    {
+        $key = "auto_accept_{$platform}";
+        return $this->settings[$key] ?? false;
+    }
+
+    /**
+     * Get enabled platforms for this tenant.
+     */
+    public function getEnabledPlatforms(): array
+    {
+        return $this->settings['enabled_platforms'] ?? [];
+    }
+
+    /**
+     * Get a setting value with optional default.
+     */
+    public function getSetting(string $key, $default = null)
+    {
+        return $this->settings[$key] ?? $default;
+    }
+
+    /**
+     * Update a specific setting.
+     */
+    public function updateSetting(string $key, $value): void
+    {
+        $settings = $this->settings ?? [];
+        $settings[$key] = $value;
+        $this->update(['settings' => $settings]);
+    }
+
+    /**
+     * Get timezone for this tenant.
+     */
+    public function getTimezone(): string
+    {
+        return $this->settings['timezone'] ?? 'Asia/Dubai';
+    }
+
+    /**
+     * Get currency for this tenant.
+     */
+    public function getCurrency(): string
+    {
+        return $this->settings['currency'] ?? 'AED';
+    }
+
+    /**
+     * Get language for this tenant.
+     */
+    public function getLanguage(): string
+    {
+        return $this->settings['language'] ?? 'en';
+    }
 }

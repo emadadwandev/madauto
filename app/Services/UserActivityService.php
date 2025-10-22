@@ -34,7 +34,9 @@ class UserActivityService
             'user_agent' => request()?->userAgent(),
             'properties' => $properties,
             'causer_id' => $causer?->id ?? $user?->id,
-            'causer_type' => get_class($causer ?? $user) ?? null,
+            'causer_type' => $causer
+                ? get_class($causer)
+                : ($user ? get_class($user) : null),
         ]);
     }
 
@@ -82,7 +84,7 @@ class UserActivityService
         $actorName = $causer?->name ?? 'System';
         $subjectName = $subject?->name ?? 'A user';
 
-        return match($action) {
+        return match ($action) {
             'user.invited' => "$actorName invited $subjectName to the team",
             'user.accepted_invitation' => "$subjectName accepted invitation to join the team",
             'user.role_changed' => "$actorName changed $subjectName's role to " . ($properties['role'] ?? 'unknown'),
@@ -90,16 +92,16 @@ class UserActivityService
             'user.login' => "$subjectName logged in",
             'user.logout' => "$subjectName logged out",
             'invitation.resent' => "$actorName resent invitation to $subjectName",
-            'order.processed' => "$actorName processed order #{$properties['order_id'] ?? 'unknown'}",
-            'menu.created' => "$actorName created menu '{$properties['menu_name'] ?? 'unknown'}'",
-            'menu.updated' => "$actorName updated menu '{$properties['menu_name'] ?? 'unknown'}'",
-            'menu.published' => "$actorName published menu '{$properties['menu_name'] ?? 'unknown'}'",
-            'menu.deleted' => "$actorName deleted menu '{$properties['menu_name'] ?? 'unknown'}'",
-            'location.created' => "$actorName created location '{$properties['location_name'] ?? 'unknown'}'",
-            'location.updated' => "$actorName updated location '{$properties['location_name'] ?? 'unknown'}'",
-            'location.deleted' => "$actorName deleted location '{$properties['location_name'] ?? 'unknown'}'",
+            'order.processed' => "$actorName processed order '" . ($properties['order_id'] ?? 'unknown') . "'",
+            'menu.created' => "$actorName created menu '" . ($properties['menu_name'] ?? 'unknown') . "'",
+            'menu.updated' => "$actorName updated menu '" . ($properties['menu_name'] ?? 'unknown') . "'",
+            'menu.published' => "$actorName published menu '" . ($properties['menu_name'] ?? 'unknown') . "'",
+            'menu.deleted' => "$actorName deleted menu '" . ($properties['menu_name'] ?? 'unknown') . "'",
+            'location.created' => "$actorName created location '" . ($properties['location_name'] ?? 'unknown') . "'",
+            'location.updated' => "$actorName updated location '" . ($properties['location_name'] ?? 'unknown') . "'",
+            'location.deleted' => "$actorName deleted location '" . ($properties['location_name'] ?? 'unknown') . "'",
             'location.busy_toggled' => "$actorName marked location as " . ($properties['is_busy'] ? 'busy' : 'available'),
-            'default' => "$actorName performed action: $action",
+            default => "$actorName performed action: $action",
         };
     }
 

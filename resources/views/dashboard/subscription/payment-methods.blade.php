@@ -4,7 +4,7 @@
             <h2 class="font-semibold text-xl text-gray-800 leading-tight">
                 {{ __('Payment Methods') }}
             </h2>
-            <a href="{{ route('dashboard.subscription.index') }}" class="text-sm text-gray-600 hover:text-gray-900">
+            <a href="{{ route('dashboard.subscription.index', ['subdomain' => request()->route('subdomain')]) }}" class="text-sm text-gray-600 hover:text-gray-900">
                 &larr; Back to Subscription
             </a>
         </div>

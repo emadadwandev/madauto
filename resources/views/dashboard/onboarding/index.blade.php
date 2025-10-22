@@ -7,71 +7,353 @@
                 <p class="text-xl text-gray-600">Follow these simple steps to start syncing your orders</p>
             </div>
 
-            <!-- Progress Indicator -->
-            <div class="mb-12" x-data="{ currentStep: {{ $onboardingStatus['loyverse_connected'] ? ($onboardingStatus['careem_configured'] ? 3 : 2) : 1 }} }">
+            <!-- Progress Indicator - 5 Steps -->
+            <div class="mb-12" x-data="{
+                currentStep: {{ $onboardingStatus['account_configured'] ? ($onboardingStatus['location_created'] ? ($onboardingStatus['loyverse_connected'] ? ($onboardingStatus['careem_configured'] ? 5 : 4) : 3) : 2) : 1 }}
+            }">
                 <div class="flex items-center justify-between">
-                    <!-- Step 1 -->
+                    <!-- Step 1: Account Settings -->
                     <div class="flex-1">
                         <div class="flex items-center">
                             <div class="flex-shrink-0">
-                                <div :class="currentStep >= 1 ? 'bg-indigo-600 text-white' : 'bg-gray-300 text-gray-600'" class="w-10 h-10 rounded-full flex items-center justify-center font-bold">
-                                    <span x-show="!{{ $onboardingStatus['loyverse_connected'] ? 'true' : 'false' }}">1</span>
+                                <div :class="currentStep >= 1 ? 'bg-indigo-600 text-white' : 'bg-gray-300 text-gray-600'" class="w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm">
+                                    <span x-show="!{{ $onboardingStatus['account_configured'] ? 'true' : 'false' }}">1</span>
+                                    <svg x-show="{{ $onboardingStatus['account_configured'] ? 'true' : 'false' }}" class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                                    </svg>
+                                </div>
+                            </div>
+                            <div class="ml-2 flex-1">
+                                <p class="text-xs font-medium" :class="currentStep >= 1 ? 'text-indigo-600' : 'text-gray-500'">Account</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Connector -->
+                    <div class="flex-1 px-1">
+                        <div :class="currentStep >= 2 ? 'bg-indigo-600' : 'bg-gray-300'" class="h-1 w-full"></div>
+                    </div>
+
+                    <!-- Step 2: Location -->
+                    <div class="flex-1">
+                        <div class="flex items-center">
+                            <div class="flex-shrink-0">
+                                <div :class="currentStep >= 2 ? 'bg-indigo-600 text-white' : 'bg-gray-300 text-gray-600'" class="w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm">
+                                    <span x-show="!{{ $onboardingStatus['location_created'] ? 'true' : 'false' }}">2</span>
+                                    <svg x-show="{{ $onboardingStatus['location_created'] ? 'true' : 'false' }}" class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                                    </svg>
+                                </div>
+                            </div>
+                            <div class="ml-2 flex-1">
+                                <p class="text-xs font-medium" :class="currentStep >= 2 ? 'text-indigo-600' : 'text-gray-500'">Location</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Connector -->
+                    <div class="flex-1 px-1">
+                        <div :class="currentStep >= 3 ? 'bg-indigo-600' : 'bg-gray-300'" class="h-1 w-full"></div>
+                    </div>
+
+                    <!-- Step 3: Loyverse -->
+                    <div class="flex-1">
+                        <div class="flex items-center">
+                            <div class="flex-shrink-0">
+                                <div :class="currentStep >= 3 ? 'bg-indigo-600 text-white' : 'bg-gray-300 text-gray-600'" class="w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm">
+                                    <span x-show="!{{ $onboardingStatus['loyverse_connected'] ? 'true' : 'false' }}">3</span>
                                     <svg x-show="{{ $onboardingStatus['loyverse_connected'] ? 'true' : 'false' }}" class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
                                         <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
                                     </svg>
                                 </div>
                             </div>
-                            <div class="ml-3 flex-1">
-                                <p class="text-sm font-medium" :class="currentStep >= 1 ? 'text-indigo-600' : 'text-gray-500'">Connect Loyverse</p>
+                            <div class="ml-2 flex-1">
+                                <p class="text-xs font-medium" :class="currentStep >= 3 ? 'text-indigo-600' : 'text-gray-500'">Loyverse</p>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Connector Line -->
-                    <div class="flex-1 px-2">
-                        <div :class="currentStep >= 2 ? 'bg-indigo-600' : 'bg-gray-300'" class="h-1 w-full"></div>
+                    <!-- Connector -->
+                    <div class="flex-1 px-1">
+                        <div :class="currentStep >= 4 ? 'bg-indigo-600' : 'bg-gray-300'" class="h-1 w-full"></div>
                     </div>
 
-                    <!-- Step 2 -->
+                    <!-- Step 4: Careem -->
                     <div class="flex-1">
                         <div class="flex items-center">
                             <div class="flex-shrink-0">
-                                <div :class="currentStep >= 2 ? 'bg-indigo-600 text-white' : 'bg-gray-300 text-gray-600'" class="w-10 h-10 rounded-full flex items-center justify-center font-bold">
-                                    <span x-show="!{{ $onboardingStatus['careem_configured'] ? 'true' : 'false' }}">2</span>
+                                <div :class="currentStep >= 4 ? 'bg-indigo-600 text-white' : 'bg-gray-300 text-gray-600'" class="w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm">
+                                    <span x-show="!{{ $onboardingStatus['careem_configured'] ? 'true' : 'false' }}">4</span>
                                     <svg x-show="{{ $onboardingStatus['careem_configured'] ? 'true' : 'false' }}" class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
                                         <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
                                     </svg>
                                 </div>
                             </div>
-                            <div class="ml-3 flex-1">
-                                <p class="text-sm font-medium" :class="currentStep >= 2 ? 'text-indigo-600' : 'text-gray-500'">Configure Careem</p>
+                            <div class="ml-2 flex-1">
+                                <p class="text-xs font-medium" :class="currentStep >= 4 ? 'text-indigo-600' : 'text-gray-500'">Careem</p>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Connector Line -->
-                    <div class="flex-1 px-2">
-                        <div :class="currentStep >= 3 ? 'bg-indigo-600' : 'bg-gray-300'" class="h-1 w-full"></div>
+                    <!-- Connector -->
+                    <div class="flex-1 px-1">
+                        <div :class="currentStep >= 5 ? 'bg-indigo-600' : 'bg-gray-300'" class="h-1 w-full"></div>
                     </div>
 
-                    <!-- Step 3 -->
+                    <!-- Step 5: Complete -->
                     <div class="flex-1">
                         <div class="flex items-center">
                             <div class="flex-shrink-0">
-                                <div :class="currentStep >= 3 ? 'bg-indigo-600 text-white' : 'bg-gray-300 text-gray-600'" class="w-10 h-10 rounded-full flex items-center justify-center font-bold">
-                                    <span>3</span>
+                                <div :class="currentStep >= 5 ? 'bg-indigo-600 text-white' : 'bg-gray-300 text-gray-600'" class="w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm">
+                                    <span>5</span>
                                 </div>
                             </div>
-                            <div class="ml-3 flex-1">
-                                <p class="text-sm font-medium" :class="currentStep >= 3 ? 'text-indigo-600' : 'text-gray-500'">Complete</p>
+                            <div class="ml-2 flex-1">
+                                <p class="text-xs font-medium" :class="currentStep >= 5 ? 'text-indigo-600' : 'text-gray-500'">Done</p>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Step 1: Connect Loyverse -->
-            @if(!$onboardingStatus['loyverse_connected'])
+            <!-- Step 1: Account Settings -->
+            @if(!$onboardingStatus['account_configured'])
+                <div class="bg-white rounded-2xl shadow-xl p-8 mb-8">
+                    <div class="flex items-center mb-6">
+                        <div class="w-12 h-12 bg-indigo-100 rounded-lg flex items-center justify-center mr-4">
+                            <svg class="w-6 h-6 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                            </svg>
+                        </div>
+                        <div>
+                            <h2 class="text-2xl font-bold text-gray-900">Step 1: Account Settings</h2>
+                            <p class="text-gray-600">Configure your currency and timezone preferences</p>
+                        </div>
+                    </div>
+
+                    <form action="{{ route('dashboard.onboarding.account-settings.save', ['subdomain' => tenant()->subdomain]) }}" method="POST">
+                        @csrf
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                            <!-- Currency Selection -->
+                            <div>
+                                <label for="currency" class="block text-sm font-medium text-gray-700 mb-2">Currency</label>
+                                <select name="currency" id="currency" required class="block w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                                    <option value="">Select Currency</option>
+                                    @foreach($currencies as $code => $config)
+                                        <option value="{{ $code }}" {{ old('currency', $tenant->getCurrency()) == $code ? 'selected' : '' }}>
+                                            {{ $config['name'] }} ({{ $config['symbol'] }})
+                                        </option>
+                                    @endforeach
+                                </select>
+                                @error('currency')
+                                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                                @enderror
+                            </div>
+
+                            <!-- Timezone Selection -->
+                            <div>
+                                <label for="timezone" class="block text-sm font-medium text-gray-700 mb-2">Timezone</label>
+                                <select name="timezone" id="timezone" required class="block w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                                    <option value="">Select Timezone</option>
+                                    @foreach($timezones as $tz => $label)
+                                        <option value="{{ $tz }}" {{ old('timezone', $tenant->getTimezone()) == $tz ? 'selected' : '' }}>
+                                            {{ $label }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                                @error('timezone')
+                                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                                @enderror
+                            </div>
+                        </div>
+
+                        <div class="flex items-center justify-between">
+                            <a href="{{ route('dashboard.onboarding.skip', ['subdomain' => tenant()->subdomain]) }}" class="text-sm text-gray-600 hover:text-gray-900">Skip for now</a>
+                            <button type="submit" class="inline-flex items-center px-6 py-3 bg-indigo-600 text-white font-semibold rounded-lg hover:bg-indigo-700 transition-colors shadow-lg">
+                                Continue
+                                <svg class="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"/>
+                                </svg>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            @else
+                <!-- Step 1 Complete -->
+                <div class="bg-green-50 border-l-4 border-green-400 p-6 mb-8 rounded-lg">
+                    <div class="flex">
+                        <div class="flex-shrink-0">
+                            <svg class="h-6 w-6 text-green-400" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                            </svg>
+                        </div>
+                        <div class="ml-3">
+                            <h3 class="text-lg font-semibold text-green-800">Account Settings Configured!</h3>
+                            <p class="text-sm text-green-700">Currency: {{ $tenant->getCurrency() }} | Timezone: {{ $tenant->getTimezone() }}</p>
+                        </div>
+                    </div>
+                </div>
+            @endif
+
+            <!-- Step 2: Location Creation -->
+            @if($onboardingStatus['account_configured'] && !$onboardingStatus['location_created'])
+                <div class="bg-white rounded-2xl shadow-xl p-8 mb-8">
+                    <div class="flex items-center mb-6">
+                        <div class="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center mr-4">
+                            <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
+                            </svg>
+                        </div>
+                        <div>
+                            <h2 class="text-2xl font-bold text-gray-900">Step 2: Create Your First Location</h2>
+                            <p class="text-gray-600">Add your restaurant or business location</p>
+                        </div>
+                    </div>
+
+                    <form action="{{ route('dashboard.onboarding.location.save', ['subdomain' => tenant()->subdomain]) }}" method="POST">
+                        @csrf
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                            <!-- Location Name -->
+                            <div class="md:col-span-2">
+                                <label for="name" class="block text-sm font-medium text-gray-700 mb-2">Location Name *</label>
+                                <input type="text" name="name" id="name" required value="{{ old('name') }}"
+                                    class="block w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                                    placeholder="e.g., Main Branch, Downtown Location">
+                                @error('name')
+                                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                                @enderror
+                            </div>
+
+                            <!-- Address Line 1 -->
+                            <div class="md:col-span-2">
+                                <label for="address_line1" class="block text-sm font-medium text-gray-700 mb-2">Address Line 1 *</label>
+                                <input type="text" name="address_line1" id="address_line1" required value="{{ old('address_line1') }}"
+                                    class="block w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                                    placeholder="Street address">
+                                @error('address_line1')
+                                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                                @enderror
+                            </div>
+
+                            <!-- Address Line 2 -->
+                            <div class="md:col-span-2">
+                                <label for="address_line2" class="block text-sm font-medium text-gray-700 mb-2">Address Line 2</label>
+                                <input type="text" name="address_line2" id="address_line2" value="{{ old('address_line2') }}"
+                                    class="block w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                                    placeholder="Apartment, suite, unit, building, floor, etc.">
+                            </div>
+
+                            <!-- City -->
+                            <div>
+                                <label for="city" class="block text-sm font-medium text-gray-700 mb-2">City *</label>
+                                <input type="text" name="city" id="city" required value="{{ old('city') }}"
+                                    class="block w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                                @error('city')
+                                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                                @enderror
+                            </div>
+
+                            <!-- State/Province -->
+                            <div>
+                                <label for="state" class="block text-sm font-medium text-gray-700 mb-2">State/Province</label>
+                                <input type="text" name="state" id="state" value="{{ old('state') }}"
+                                    class="block w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                            </div>
+
+                            <!-- Postal Code -->
+                            <div>
+                                <label for="postal_code" class="block text-sm font-medium text-gray-700 mb-2">Postal Code</label>
+                                <input type="text" name="postal_code" id="postal_code" value="{{ old('postal_code') }}"
+                                    class="block w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                            </div>
+
+                            <!-- Country -->
+                            <div>
+                                <label for="country" class="block text-sm font-medium text-gray-700 mb-2">Country *</label>
+                                <select name="country" id="country" required class="block w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                                    <option value="AE" {{ old('country', 'AE') == 'AE' ? 'selected' : '' }}>United Arab Emirates</option>
+                                    <option value="SA" {{ old('country') == 'SA' ? 'selected' : '' }}>Saudi Arabia</option>
+                                    <option value="KW" {{ old('country') == 'KW' ? 'selected' : '' }}>Kuwait</option>
+                                    <option value="BH" {{ old('country') == 'BH' ? 'selected' : '' }}>Bahrain</option>
+                                    <option value="QA" {{ old('country') == 'QA' ? 'selected' : '' }}>Qatar</option>
+                                    <option value="OM" {{ old('country') == 'OM' ? 'selected' : '' }}>Oman</option>
+                                    <option value="JO" {{ old('country') == 'JO' ? 'selected' : '' }}>Jordan</option>
+                                    <option value="EG" {{ old('country') == 'EG' ? 'selected' : '' }}>Egypt</option>
+                                </select>
+                                @error('country')
+                                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                                @enderror
+                            </div>
+
+                            <!-- Phone -->
+                            <div>
+                                <label for="phone" class="block text-sm font-medium text-gray-700 mb-2">Phone</label>
+                                <input type="text" name="phone" id="phone" value="{{ old('phone') }}"
+                                    class="block w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                            </div>
+
+                            <!-- Email -->
+                            <div>
+                                <label for="email" class="block text-sm font-medium text-gray-700 mb-2">Email</label>
+                                <input type="email" name="email" id="email" value="{{ old('email') }}"
+                                    class="block w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                            </div>
+
+                            <!-- Platforms -->
+                            <div class="md:col-span-2">
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Connected Platforms *</label>
+                                <div class="flex gap-4">
+                                    <label class="inline-flex items-center">
+                                        <input type="checkbox" name="platforms[]" value="careem" {{ in_array('careem', old('platforms', ['careem'])) ? 'checked' : '' }}
+                                            class="rounded border-gray-300 text-indigo-600 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+                                        <span class="ml-2">Careem NOW</span>
+                                    </label>
+                                    <label class="inline-flex items-center">
+                                        <input type="checkbox" name="platforms[]" value="talabat" {{ in_array('talabat', old('platforms', [])) ? 'checked' : '' }}
+                                            class="rounded border-gray-300 text-indigo-600 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+                                        <span class="ml-2">Talabat</span>
+                                    </label>
+                                </div>
+                                @error('platforms')
+                                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                                @enderror
+                            </div>
+                        </div>
+
+                        <div class="flex items-center justify-between">
+                            <a href="{{ route('dashboard.onboarding.skip', ['subdomain' => tenant()->subdomain]) }}" class="text-sm text-gray-600 hover:text-gray-900">Skip for now</a>
+                            <button type="submit" class="inline-flex items-center px-6 py-3 bg-purple-600 text-white font-semibold rounded-lg hover:bg-purple-700 transition-colors shadow-lg">
+                                Continue
+                                <svg class="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"/>
+                                </svg>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            @elseif($onboardingStatus['location_created'])
+                <!-- Step 2 Complete -->
+                <div class="bg-green-50 border-l-4 border-green-400 p-6 mb-8 rounded-lg">
+                    <div class="flex">
+                        <div class="flex-shrink-0">
+                            <svg class="h-6 w-6 text-green-400" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                            </svg>
+                        </div>
+                        <div class="ml-3">
+                            <h3 class="text-lg font-semibold text-green-800">Location Created!</h3>
+                            <p class="text-sm text-green-700">Your first location has been successfully added.</p>
+                        </div>
+                    </div>
+                </div>
+            @endif
+
+            <!-- Step 3: Connect Loyverse -->
+            @if($onboardingStatus['account_configured'] && $onboardingStatus['location_created'] && !$onboardingStatus['loyverse_connected'])
                 <div class="bg-white rounded-2xl shadow-xl p-8 mb-8">
                     <div class="flex items-center mb-6">
                         <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mr-4">
@@ -80,7 +362,7 @@
                             </svg>
                         </div>
                         <div>
-                            <h2 class="text-2xl font-bold text-gray-900">Step 1: Connect Your Loyverse Account</h2>
+                            <h2 class="text-2xl font-bold text-gray-900">Step 3: Connect Your Loyverse Account</h2>
                             <p class="text-gray-600">Enter your Loyverse API token to enable order syncing</p>
                         </div>
                     </div>
@@ -107,7 +389,7 @@
                     </div>
 
                     <!-- Form -->
-                    <form action="{{ route('dashboard.onboarding.loyverse.save') }}" method="POST">
+                    <form action="{{ route('dashboard.onboarding.loyverse.save', ['subdomain' => tenant()->subdomain]) }}" method="POST">
                         @csrf
 
                         <div class="mb-6">
@@ -123,8 +405,8 @@
                         </div>
 
                         <div class="flex items-center justify-between">
-                            <a href="{{ route('dashboard.onboarding.skip') }}" class="text-sm text-gray-600 hover:text-gray-900">Skip for now</a>
-                            <button type="submit" class="inline-flex items-center px-6 py-3 bg-indigo-600 text-white font-semibold rounded-lg hover:bg-indigo-700 transition-colors shadow-lg">
+                            <a href="{{ route('dashboard.onboarding.skip', ['subdomain' => tenant()->subdomain]) }}" class="text-sm text-gray-600 hover:text-gray-900">Skip for now</a>
+                            <button type="submit" class="inline-flex items-center px-6 py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition-colors shadow-lg">
                                 Connect Loyverse
                                 <svg class="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"/>
@@ -133,8 +415,8 @@
                         </div>
                     </form>
                 </div>
-            @else
-                <!-- Step 1 Complete -->
+            @elseif($onboardingStatus['loyverse_connected'])
+                <!-- Step 3 Complete -->
                 <div class="bg-green-50 border-l-4 border-green-400 p-6 mb-8 rounded-lg">
                     <div class="flex">
                         <div class="flex-shrink-0">
@@ -150,8 +432,8 @@
                 </div>
             @endif
 
-            <!-- Step 2: Configure Careem Webhook -->
-            @if($onboardingStatus['loyverse_connected'] && !$onboardingStatus['careem_configured'])
+            <!-- Step 4: Configure Careem Webhook -->
+            @if($onboardingStatus['account_configured'] && $onboardingStatus['location_created'] && $onboardingStatus['loyverse_connected'] && !$onboardingStatus['careem_configured'])
                 <div class="bg-white rounded-2xl shadow-xl p-8 mb-8">
                     <div class="flex items-center mb-6">
                         <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center mr-4">
@@ -161,7 +443,7 @@
                             </svg>
                         </div>
                         <div>
-                            <h2 class="text-2xl font-bold text-gray-900">Step 2: Configure Careem Webhook</h2>
+                            <h2 class="text-2xl font-bold text-gray-900">Step 4: Configure Careem Webhook</h2>
                             <p class="text-gray-600">Set up the webhook to receive orders from Careem Now</p>
                         </div>
                     </div>
@@ -187,11 +469,11 @@
                     </div>
 
                     <!-- Generate Button -->
-                    <form action="{{ route('dashboard.onboarding.webhook.generate') }}" method="POST">
+                    <form action="{{ route('dashboard.onboarding.webhook.generate', ['subdomain' => tenant()->subdomain]) }}" method="POST">
                         @csrf
 
                         <div class="flex items-center justify-between">
-                            <a href="{{ route('dashboard.onboarding.skip') }}" class="text-sm text-gray-600 hover:text-gray-900">Skip for now</a>
+                            <a href="{{ route('dashboard.onboarding.skip', ['subdomain' => tenant()->subdomain]) }}" class="text-sm text-gray-600 hover:text-gray-900">Skip for now</a>
                             <button type="submit" class="inline-flex items-center px-6 py-3 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700 transition-colors shadow-lg">
                                 Generate Webhook Secret
                                 <svg class="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -202,7 +484,7 @@
                     </form>
                 </div>
             @elseif($onboardingStatus['careem_configured'])
-                <!-- Step 2 Complete -->
+                <!-- Step 4 Complete -->
                 <div class="bg-green-50 border-l-4 border-green-400 p-6 mb-8 rounded-lg">
                     <div class="flex">
                         <div class="flex-shrink-0">
@@ -250,8 +532,8 @@
                 </div>
             @endif
 
-            <!-- Step 3: Complete Onboarding -->
-            @if($onboardingStatus['loyverse_connected'] && $onboardingStatus['careem_configured'])
+            <!-- Step 5: Complete Onboarding -->
+            @if($onboardingStatus['account_configured'] && $onboardingStatus['location_created'] && $onboardingStatus['loyverse_connected'] && $onboardingStatus['careem_configured'])
                 <div class="bg-white rounded-2xl shadow-xl p-8 mb-8">
                     <div class="text-center">
                         <div class="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-full mb-4">
@@ -263,7 +545,7 @@
                         <h2 class="text-3xl font-extrabold text-gray-900 mb-4">You're All Set!</h2>
                         <p class="text-lg text-gray-600 mb-8">Your integration is configured and ready to sync orders automatically.</p>
 
-                        <form action="{{ route('dashboard.onboarding.complete') }}" method="POST" class="inline">
+                        <form action="{{ route('dashboard.onboarding.complete', ['subdomain' => tenant()->subdomain]) }}" method="POST" class="inline">
                             @csrf
                             <button type="submit" class="inline-flex items-center px-8 py-4 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-bold rounded-lg hover:from-indigo-700 hover:to-purple-700 transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-0.5">
                                 Go to Dashboard

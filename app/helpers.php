@@ -155,3 +155,97 @@ if (! function_exists('landingUrl')) {
         return $url;
     }
 }
+
+if (! function_exists('currency')) {
+    /**
+     * Get currency configuration for the current tenant or a specific currency code.
+     */
+    function currency(?string $code = null): array
+    {
+        $code = $code ?? (tenant() ? tenant()->getCurrency() : config('currencies.default'));
+
+        return config("currencies.supported.{$code}", config('currencies.supported.'.config('currencies.default')));
+    }
+}
+
+if (! function_exists('currencySymbol')) {
+    /**
+     * Get the currency symbol for the current tenant or a specific currency code.
+     */
+    function currencySymbol(?string $code = null): string
+    {
+        $currencyConfig = currency($code);
+
+        return $currencyConfig['symbol'] ?? '$';
+    }
+}
+
+if (! function_exists('formatCurrency')) {
+    /**
+     * Format an amount with the tenant's currency.
+     */
+    function formatCurrency(float $amount, ?string $code = null, bool $showSymbol = true): string
+    {
+        $currencyConfig = currency($code);
+
+        $formatted = number_format(
+            $amount,
+            $currencyConfig['decimals'] ?? 2,
+            $currencyConfig['decimal_separator'] ?? '.',
+            $currencyConfig['thousands_separator'] ?? ','
+        );
+
+        if (!$showSymbol) {
+            return $formatted;
+        }
+
+        $symbol = $currencyConfig['symbol'] ?? '$';
+        $position = $currencyConfig['symbol_position'] ?? 'before';
+
+        if ($position === 'before') {
+            return $symbol . ' ' . $formatted;
+        }
+
+        return $formatted . ' ' . $symbol;
+    }
+}
+
+if (! function_exists('supportedCurrencies')) {
+    /**
+     * Get all supported currencies.
+     */
+    function supportedCurrencies(): array
+    {
+        return config('currencies.supported', []);
+    }
+}
+
+if (! function_exists('supportedTimezones')) {
+    /**
+     * Get list of common timezones for the Middle East region and beyond.
+     */
+    function supportedTimezones(): array
+    {
+        return [
+            'Asia/Dubai' => 'UAE (Dubai) - UTC+4',
+            'Asia/Riyadh' => 'Saudi Arabia (Riyadh) - UTC+3',
+            'Asia/Kuwait' => 'Kuwait - UTC+3',
+            'Asia/Bahrain' => 'Bahrain - UTC+3',
+            'Asia/Qatar' => 'Qatar - UTC+3',
+            'Asia/Muscat' => 'Oman - UTC+4',
+            'Asia/Amman' => 'Jordan - UTC+3',
+            'Asia/Beirut' => 'Lebanon - UTC+2/+3',
+            'Asia/Damascus' => 'Syria - UTC+2/+3',
+            'Asia/Baghdad' => 'Iraq - UTC+3',
+            'Africa/Cairo' => 'Egypt - UTC+2',
+            'Asia/Kolkata' => 'India - UTC+5:30',
+            'Asia/Karachi' => 'Pakistan - UTC+5',
+            'Europe/London' => 'United Kingdom - UTC+0/+1',
+            'Europe/Paris' => 'France - UTC+1/+2',
+            'America/New_York' => 'US Eastern - UTC-5/-4',
+            'America/Chicago' => 'US Central - UTC-6/-5',
+            'America/Los_Angeles' => 'US Pacific - UTC-8/-7',
+            'UTC' => 'UTC - Coordinated Universal Time',
+        ];
+    }
+}

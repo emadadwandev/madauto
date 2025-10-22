@@ -46,4 +46,45 @@ class ApiCredentialRepository
         // The model accessor already decrypts the value
         return $apiCredential->credential_value;
     }
+
+    /**
+     * Get the ApiCredential model for a service.
+     * Returns the first active credential for the service.
+     */
+    public function getByService(string $service): ?ApiCredential
+    {
+        return ApiCredential::where('service', $service)
+            ->where('is_active', true)
+            ->first();
+    }
+
+    /**
+     * Create or update credentials for a service.
+     */
+    public function upsert(string $service, string $credentialType, string $credentialValue, ?int $tenantId = null): ApiCredential
+    {
+        return ApiCredential::updateOrCreate(
+            [
+                'service' => $service,
+                'credential_type' => $credentialType,
+                'tenant_id' => $tenantId ?? tenant()?->id,
+            ],
+            [
+                'credential_value' => $credentialValue,
+                'is_active' => true,
+            ]
+        );
+    }
+
+    /**
+     * Delete credentials for a service.
+     */
+    public function deleteByService(string $service, ?int $tenantId = null): bool
+    {
+        $tenantId = $tenantId ?? tenant()?->id;
+
+        return ApiCredential::where('service', $service)
+            ->where('tenant_id', $tenantId)
+            ->delete();
+    }
 }

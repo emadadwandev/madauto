@@ -124,23 +124,23 @@
                                 <h5 class="text-sm font-medium text-gray-700 mb-3">Quick Actions</h5>
                                 <div class="space-y-2">
                                     @if($subscription->cancel_at_period_end)
-                                        <form method="POST" action="{{ route('dashboard.subscription.resume') }}">
+                                        <form method="POST" action="{{ route('dashboard.subscription.resume', ['subdomain' => request()->route('subdomain')]) }}">
                                             @csrf
                                             <button type="submit" class="w-full inline-flex justify-center items-center px-4 py-2 bg-green-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-green-700">
                                                 Resume Subscription
                                             </button>
                                         </form>
                                     @else
-                                        <a href="{{ route('dashboard.subscription.plans') }}" class="w-full inline-flex justify-center items-center px-4 py-2 bg-indigo-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-indigo-700">
+                                        <a href="{{ route('dashboard.subscription.plans', ['subdomain' => request()->route('subdomain')]) }}" class="w-full inline-flex justify-center items-center px-4 py-2 bg-indigo-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-indigo-700">
                                             Change Plan
                                         </a>
                                     @endif
 
-                                    <a href="{{ route('dashboard.subscription.billing-history') }}" class="w-full inline-flex justify-center items-center px-4 py-2 bg-gray-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-gray-700">
+                                    <a href="{{ route('dashboard.subscription.billing-history', ['subdomain' => request()->route('subdomain')]) }}" class="w-full inline-flex justify-center items-center px-4 py-2 bg-gray-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-gray-700">
                                         Billing History
                                     </a>
 
-                                    <a href="{{ route('dashboard.subscription.payment-methods') }}" class="w-full inline-flex justify-center items-center px-4 py-2 bg-gray-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-gray-700">
+                                    <a href="{{ route('dashboard.subscription.payment-methods', ['subdomain' => request()->route('subdomain')]) }}" class="w-full inline-flex justify-center items-center px-4 py-2 bg-gray-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-gray-700">
                                         Payment Methods
                                     </a>
 
@@ -148,7 +148,7 @@
                                         <button onclick="if(confirm('Are you sure you want to cancel your subscription? It will remain active until the end of your billing period.')) { document.getElementById('cancel-form').submit(); }" class="w-full inline-flex justify-center items-center px-4 py-2 bg-red-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-red-700">
                                             Cancel Subscription
                                         </button>
-                                        <form id="cancel-form" method="POST" action="{{ route('dashboard.subscription.cancel') }}" class="hidden">
+                                        <form id="cancel-form" method="POST" action="{{ route('dashboard.subscription.cancel', ['subdomain' => request()->route('subdomain')]) }}" class="hidden">
                                             @csrf
                                         </form>
                                     @endif
@@ -163,7 +163,7 @@
                             <h3 class="mt-2 text-sm font-medium text-gray-900">No Active Subscription</h3>
                             <p class="mt-1 text-sm text-gray-500">Get started by choosing a plan that fits your needs.</p>
                             <div class="mt-6">
-                                <a href="{{ route('dashboard.subscription.plans') }}" class="inline-flex items-center px-4 py-2 bg-indigo-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-indigo-700">
+                                <a href="{{ route('dashboard.subscription.plans', ['subdomain' => request()->route('subdomain')]) }}" class="inline-flex items-center px-4 py-2 bg-indigo-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-indigo-700">
                                     View Plans
                                 </a>
                             </div>
@@ -241,7 +241,7 @@
                                                     You've reached your monthly order limit. Upgrade your plan to continue processing orders.
                                                 </p>
                                                 <div class="mt-2">
-                                                    <a href="{{ route('dashboard.subscription.plans') }}" class="text-sm font-medium text-red-700 underline hover:text-red-600">
+                                                    <a href="{{ route('dashboard.subscription.plans', ['subdomain' => request()->route('subdomain')]) }}" class="text-sm font-medium text-red-700 underline hover:text-red-600">
                                                         Upgrade Now →
                                                     </a>
                                                 </div>

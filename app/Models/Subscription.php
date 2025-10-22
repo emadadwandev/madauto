@@ -61,6 +61,14 @@ class Subscription extends Model
     }
 
     /**
+     * Alias for usageRecords() relationship.
+     */
+    public function usage(): HasMany
+    {
+        return $this->usageRecords();
+    }
+
+    /**
      * Check if subscription is active.
      */
     public function isActive(): bool
