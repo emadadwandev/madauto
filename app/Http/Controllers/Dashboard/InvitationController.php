@@ -192,17 +192,27 @@ class InvitationController extends Controller
     /**
      * Resend an invitation email.
      */
-    public function resend($invitationId)
+    public function resend(Request $request, $subdomain, $invitation)
     {
+        \Log::info('Resend method called', [
+            'subdomain_param' => $subdomain,
+            'invitation_param' => $invitation,
+            'route_params' => $request->route()->parameters(),
+            'request_all' => $request->all()
+        ]);
+
         $this->authorize('invite', User::class);
 
         $tenant = app(TenantContext::class)->get();
-        
+        \Log::info('Tenant context retrieved', ['tenant_id' => $tenant->id]);
+
         // Find the invitation
-        $invitation = Invitation::findOrFail($invitationId);
+        $invitation = Invitation::findOrFail($invitation);
+        \Log::info('Invitation found', ['invitation_id' => $invitation->id, 'tenant_id' => $invitation->tenant_id]);
 
         // Ensure invitation belongs to current tenant
         if ($invitation->tenant_id !== $tenant->id) {
+            \Log::error('Tenant mismatch', ['invitation_tenant' => $invitation->tenant_id, 'current_tenant' => $tenant->id]);
             abort(403);
         }
 
@@ -222,6 +232,7 @@ class InvitationController extends Controller
 
         // Resend the email
         Mail::to($invitation->email)->send(new InvitationMail($invitation));
+        \Log::info('Invitation email resent', ['invitation_id' => $invitation->id]);
 
         return back()->with('success', 'Invitation resent successfully!');
     }
@@ -229,14 +240,14 @@ class InvitationController extends Controller
     /**
      * Cancel (delete) an invitation.
      */
-    public function destroy($invitationId)
+    public function destroy(Request $request, $subdomain, $invitation)
     {
         $this->authorize('invite', User::class);
 
         $tenant = app(TenantContext::class)->get();
-        
+
         // Find the invitation
-        $invitation = Invitation::findOrFail($invitationId);
+        $invitation = Invitation::findOrFail($invitation);
 
         // Ensure invitation belongs to current tenant
         if ($invitation->tenant_id !== $tenant->id) {

@@ -1,3 +1,206 @@
+## [Date: 2025-10-23] - Dynamic Currency Support, Authorization & Invitation Fixes
+
+### Fixed - Invitation Route Parameter Error
+- **Route Parameter Order & Type Mismatch** causing errors on invitation actions
+  - Files:
+    - `app/Http/Controllers/Dashboard/InvitationController.php` (modified)
+    - `resources/views/dashboard/invitations/index.blade.php` (modified)
+  - Issue: Multiple errors when trying to resend/delete invitations
+    - First error: `POST /dashboard/invitations/4/resend` returned 404 Not Found
+    - Second error: `TypeError: Argument #1 ($invitation) must be of type App\Models\Invitation, string given`
+    - Third error: Persistent 404 after fixing controller
+  - Root Causes:
+    1. **Controller issue**: Laravel's implicit route model binding requires specific configuration
+       - Route parameter `{invitation}` was being passed as string, not bound to model
+       - Attempted to use implicit binding but it wasn't configured properly
+    2. **View issue**: Route parameters passed in wrong order to `route()` helper
+       - Domain-based routing pattern: `{subdomain}.localhost/dashboard/invitations/{invitation}/resend`
+       - View was passing: `['subdomain' => ..., 'invitation' => ...]` (wrong order)
+       - Should pass: `['invitation' => ..., 'subdomain' => ...]` (correct order)
+  - Fixes Applied:
+    1. **Controller**: Reverted to explicit parameter handling with manual model lookup
+       - Changed `resend($invitationId)` → `resend(Request $request, $invitation)`
+       - Changed `destroy($invitationId)` → `destroy(Request $request, $invitation)`
+       - Added manual `Invitation::findOrFail($invitation)` for proper model retrieval
+    2. **View**: Fixed parameter order in `route()` helper calls
+       - Changed from: `route('...resend', ['subdomain' => ..., 'invitation' => ...])`
+       - Changed to: `route('...resend', ['invitation' => ..., 'subdomain' => ...])`
+  - Benefits:
+    - **Reliable**: Works without additional route binding configuration
+    - **Clear errors**: 404 if invitation doesn't exist
+    - **Tenant safety**: Explicit tenant ownership verification
+    - **Correct URLs**: Route helper generates proper subdomain URLs
+  - Impact: Resend and delete invitation actions now work correctly
+
+### Fixed - Controller Authorization Error
+- **Base Controller Missing Traits** causing authorization failures
+  - Files: `app/Http/Controllers/Controller.php` (modified)
+  - Issue: `Call to undefined method authorize()` error when sending invitations
+  - Fix: Added required Laravel traits:
+    - `Illuminate\Foundation\Auth\Access\AuthorizesRequests`: Enables `authorize()` method
+    - `Illuminate\Foundation\Validation\ValidatesRequests`: Enables validation helpers
+  - Impact: All controllers can now use authorization and validation methods
+  - Affected Features: Team invitations, user management, resource authorization
+
+### Fixed - Mailtrap Integration with Official Package
+- **Integrated Official Mailtrap PHP Package** for Laravel
+  - Files:
+    - `composer.json` (modified) - Added `railsware/mailtrap-php` v3.9.0
+    - `config/mail.php` (modified) - Added `mailtrap-sdk` transport
+    - `config/services.php` (modified) - Added Mailtrap SDK configuration
+    - `.env.example` (modified) - Updated with Mailtrap SDK settings
+  - Issue: Multiple errors when attempting to send invitations
+    - `Mailer [mailtrap] is not defined` - Invalid mailer name
+    - `Unsupported mail transport [mailtrap]` - Wrong transport name
+  - Root Cause: Mailtrap package uses `mailtrap-sdk` as transport name, not `mailtrap`
+  - Solution: Properly integrated official Mailtrap Laravel package
+    - Package: `railsware/mailtrap-php` v3.9.0
+    - Dependencies: `symfony/http-client`, `nyholm/psr7`, `php-http/*`
+    - Auto-discovery: Service provider auto-registered via package discovery
+    - Integration: Laravel 9.x+ compatible (Symfony Mailer transport)
+  - Configuration Added to `config/mail.php`:
+    ```php
+    'mailers' => [
+        'mailtrap-sdk' => [
+            'transport' => 'mailtrap-sdk',  // Note: 'mailtrap-sdk' not 'mailtrap'
+        ],
+    ],
+    ```
+  - Configuration Added to `config/services.php`:
+    ```php
+    'mailtrap-sdk' => [
+        'host' => env('MAILTRAP_HOST', 'sandbox.api.mailtrap.io'),
+        'apiKey' => env('MAILTRAP_API_KEY'),
+        'inboxId' => env('MAILTRAP_INBOX_ID'),
+    ],
+    ```
+  - Required `.env` Changes:
+    ```env
+    MAIL_MAILER=mailtrap-sdk                # Use 'mailtrap-sdk' (with hyphen and 'sdk')
+    MAILTRAP_API_KEY=your_api_key_here     # From https://mailtrap.io/api-tokens
+    MAILTRAP_HOST=sandbox.api.mailtrap.io  # For testing (sandbox mode)
+    MAILTRAP_INBOX_ID=your_inbox_id        # Your Mailtrap inbox ID
+    MAIL_FROM_ADDRESS="noreply@yourapp.com"
+    MAIL_FROM_NAME="${APP_NAME}"
+    ```
+  - Benefits Over SMTP Approach:
+    - **API-based**: More reliable than SMTP
+    - **Feature-rich**: Supports sandbox/production/bulk modes
+    - **Better errors**: Clear API error messages with status codes
+    - **Laravel integration**: Native Symfony Mailer transport
+    - **Auto-discovery**: Automatically registers service provider
+  - Available Hosts:
+    - `sandbox.api.mailtrap.io` - Testing/development (emails don't send)
+    - `send.api.mailtrap.io` - Production (sends real emails)
+    - `bulk.api.mailtrap.io` - Bulk campaigns
+  - Impact: Invitation emails and all mail features now work properly
+  - Documentation: https://github.com/mailtrap/mailtrap-php
+
+---
+
+## [Date: 2025-10-23] - Dynamic Currency Support Across All Views
+
+### Changed - Dynamic Currency Display System
+- **Currency Helper Functions** implemented platform-wide
+  - Files:
+    - `app/helpers.php` (previously added, now fully utilized)
+    - `config/currencies.php` (previously added, now fully utilized)
+  - Helper Functions Used:
+    - `formatCurrency($amount, $code = null, $showSymbol = true)`: Format amounts with tenant currency
+    - `currencySymbol($code = null)`: Get currency symbol for tenant
+    - `currency($code = null)`: Get full currency configuration
+  - Benefits: Consistent currency formatting, tenant-specific display, easy maintenance
+
+### Changed - Modifier Model Currency Formatting
+- **Formatted Price Accessor** updated for dynamic currency
+  - Files: `app/Models/Modifier.php` (modified)
+  - Method: `getFormattedPriceAttribute()`
+  - Changed From: Hardcoded `number_format()` with no currency
+  - Changed To: `formatCurrency()` helper with tenant currency
+  - Impact: Modifier prices now display in tenant's configured currency
+
+### Changed - Tenant Dashboard Views
+- **Subscription Views** updated with dynamic currency
+  - Files:
+    - `resources/views/dashboard/subscription/plans.blade.php` (modified)
+    - `resources/views/dashboard/subscription/billing-history.blade.php` (modified)
+    - `resources/views/dashboard/subscription/index.blade.php` (modified)
+  - Changes:
+    - Replaced `${{ number_format($plan->price) }}` with `{{ formatCurrency($plan->price) }}`
+    - Updated invoice amounts display
+    - Updated payment summary totals
+  - Impact: All subscription pricing displays in tenant currency
+
+- **Modifier Management Views** updated with dynamic currency
+  - Files:
+    - `resources/views/dashboard/modifiers/create.blade.php` (modified)
+    - `resources/views/dashboard/modifiers/edit.blade.php` (modified)
+  - Changes:
+    - Replaced hardcoded "AED" label with `{{ currencySymbol() }}`
+  - Impact: Modifier price input labels show tenant's currency symbol
+
+- **Menu Items Views** updated with dynamic currency
+  - Files:
+    - `resources/views/dashboard/menu-items/create.blade.php` (modified)
+    - `resources/views/dashboard/menu-items/edit.blade.php` (modified)
+  - Changes:
+    - Replaced hardcoded "Price (AED)" with `Price ({{ currencySymbol() }})`
+  - Impact: Menu item price labels reflect tenant currency
+
+### Changed - Landing Page
+- **Pricing Page** updated with dynamic currency
+  - Files: `resources/views/landing/pricing.blade.php` (modified)
+  - Changes:
+    - Replaced `${{ number_format($plan->price, 0) }}` with `{{ formatCurrency($plan->price, null, true) }}`
+  - Impact: Public pricing page shows prices in default currency (AED)
+
+### Changed - Super Admin Views
+- **Dashboard** updated with default currency for MRR
+  - Files: `resources/views/super-admin/dashboard.blade.php` (modified)
+  - Changes:
+    - Updated MRR display to use `formatCurrency()` with default currency
+  - Impact: Aggregate revenue metrics display in consistent default currency
+
+- **Subscription Management** updated with default currency
+  - Files:
+    - `resources/views/super-admin/subscriptions/index.blade.php` (modified)
+    - `resources/views/super-admin/subscriptions/show.blade.php` (modified)
+  - Changes:
+    - Replaced hardcoded price formatting with `formatCurrency()`
+  - Impact: Super admin subscription views show prices in default currency
+
+- **Tenant Creation** updated with default currency
+  - Files: `resources/views/super-admin/tenants/create.blade.php` (modified)
+  - Changes:
+    - Updated plan selection dropdown to use `formatCurrency()`
+  - Impact: Plan prices in tenant creation form show in default currency
+
+### Technical Details
+- **Views Updated**: 12 files modified
+  - Dashboard: 3 subscription views, 2 modifier views, 2 menu-item views
+  - Landing: 1 pricing page
+  - Super Admin: 4 views (dashboard, subscriptions, tenants)
+- **Model Updated**: 1 file (Modifier.php)
+- **Supported Currencies**: 13 currencies with full formatting support
+  - Gulf: AED, SAR, KWD, QAR, BHD, OMR
+  - Other Middle East: JOD, EGP
+  - International: USD, EUR, GBP, INR, PKR
+- **Currency Features**:
+  - Symbol position (before/after amount)
+  - Decimal places (2-3 depending on currency)
+  - Thousands separator
+  - Decimal separator
+  - Full currency names
+
+### Benefits
+- **Multi-Currency Support**: Tenants can now use their local currency
+- **Consistent Formatting**: All monetary values formatted uniformly
+- **Easy Maintenance**: Single source of truth for currency configuration
+- **Tenant Customization**: Each tenant sees prices in their configured currency
+- **Super Admin Clarity**: Aggregate metrics use consistent default currency
+
+---
+
 ## [Date: 2025-10-22] - Super Admin Tenant Management Enhancements & Regional Support
 
 ### Added - Comprehensive Arab Countries Support

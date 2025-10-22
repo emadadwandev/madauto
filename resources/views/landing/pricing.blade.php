@@ -47,7 +47,7 @@
 
                         <!-- Price -->
                         <div class="mb-6">
-                            <span class="text-5xl font-extrabold text-gray-900">${{ number_format($plan->price, 0) }}</span>
+                            <span class="text-5xl font-extrabold text-gray-900">{{ formatCurrency($plan->price, null, true) }}</span>
                             <span class="text-gray-600">/month</span>
                         </div>
 

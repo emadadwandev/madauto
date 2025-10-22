@@ -42,7 +42,7 @@
                             </h3>
                             <div class="mt-4">
                                 <span class="text-4xl font-bold {{ $plan->slug === 'business' ? 'text-white' : 'text-gray-900' }}">
-                                    ${{ number_format($plan->price, 0) }}
+                                    {{ formatCurrency($plan->price, null, true) }}
                                 </span>
                                 <span class="text-lg {{ $plan->slug === 'business' ? 'text-indigo-100' : 'text-gray-500' }}">
                                     /{{ $plan->billing_interval }}

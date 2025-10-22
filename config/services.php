@@ -35,4 +35,25 @@ return [
         ],
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Mailtrap SDK Configuration
+    |--------------------------------------------------------------------------
+    |
+    | Mailtrap is an email testing and delivery service.
+    | Get your API key from: https://mailtrap.io/api-tokens
+    |
+    | Hosts:
+    | - sandbox.api.mailtrap.io (for testing emails)
+    | - send.api.mailtrap.io (for sending real emails)
+    | - bulk.api.mailtrap.io (for bulk email campaigns)
+    |
+    */
+
+    'mailtrap-sdk' => [
+        'host' => env('MAILTRAP_HOST', 'sandbox.api.mailtrap.io'),
+        'apiKey' => env('MAILTRAP_API_KEY'),
+        'inboxId' => env('MAILTRAP_INBOX_ID'),
+    ],
+
 ];

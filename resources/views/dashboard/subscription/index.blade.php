@@ -71,7 +71,7 @@
                             <div>
                                 <h4 class="text-2xl font-bold text-gray-900">{{ $subscription->plan->name }}</h4>
                                 <p class="text-3xl font-bold text-indigo-600 mt-2">
-                                    ${{ number_format($subscription->plan->price, 2) }}
+                                    {{ formatCurrency($subscription->plan->price) }}
                                     <span class="text-sm font-normal text-gray-500">/{{ $subscription->plan->billing_interval }}</span>
                                 </p>
                                 <div class="mt-4 space-y-2">

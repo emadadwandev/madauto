@@ -35,7 +35,7 @@
                             <dt class="text-sm font-medium text-gray-500">Price</dt>
                             <dd class="mt-1 text-sm text-gray-900">
                                 @if($subscription->subscriptionPlan)
-                                ${{ number_format($subscription->subscriptionPlan->price, 2) }} / {{ $subscription->subscriptionPlan->billing_period }}
+                                {{ formatCurrency($subscription->subscriptionPlan->price, config('currencies.default')) }} / {{ $subscription->subscriptionPlan->billing_period }}
                                 @else
                                 N/A
                                 @endif

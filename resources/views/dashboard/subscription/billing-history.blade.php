@@ -48,7 +48,7 @@
                                                 {{ $invoice->date()->format('M d, Y') }}
                                             </td>
                                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                                ${{ number_format($invoice->total() / 100, 2) }}
+                                                {{ formatCurrency($invoice->total() / 100) }}
                                             </td>
                                             <td class="px-6 py-4 whitespace-nowrap">
                                                 @if($invoice->paid)
@@ -96,7 +96,7 @@
                             <div>
                                 <dt class="text-sm font-medium text-gray-500">Total Paid</dt>
                                 <dd class="mt-1 text-2xl font-semibold text-gray-900">
-                                    ${{ number_format($invoices->where('paid', true)->sum(fn($inv) => $inv->total()) / 100, 2) }}
+                                    {{ formatCurrency($invoices->where('paid', true)->sum(fn($inv) => $inv->total()) / 100) }}
                                 </dd>
                             </div>
                             <div>
@@ -108,7 +108,7 @@
                             <div>
                                 <dt class="text-sm font-medium text-gray-500">Outstanding</dt>
                                 <dd class="mt-1 text-2xl font-semibold text-gray-900">
-                                    ${{ number_format($invoices->where('paid', false)->sum(fn($inv) => $inv->total()) / 100, 2) }}
+                                    {{ formatCurrency($invoices->where('paid', false)->sum(fn($inv) => $inv->total()) / 100) }}
                                 </dd>
                             </div>
                         </div>

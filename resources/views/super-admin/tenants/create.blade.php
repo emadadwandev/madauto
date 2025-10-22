@@ -96,7 +96,7 @@
                                     <option value="">-- Select a Plan --</option>
                                     @foreach($plans as $plan)
                                     <option value="{{ $plan->id }}" {{ old('subscription_plan_id') == $plan->id ? 'selected' : '' }}>
-                                        {{ $plan->name }} - ${{ number_format($plan->price, 2) }}/{{ $plan->billing_interval }}
+                                        {{ $plan->name }} - {{ formatCurrency($plan->price, config('currencies.default')) }}/{{ $plan->billing_interval }}
                                     </option>
                                     @endforeach
                                 </select>

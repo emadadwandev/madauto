@@ -75,14 +75,14 @@ class Modifier extends Model
     }
 
     /**
-     * Get formatted price adjustment with sign.
+     * Get formatted price adjustment with sign and tenant currency.
      */
     public function getFormattedPriceAttribute(): string
     {
         if ($this->price_adjustment > 0) {
-            return '+'.number_format($this->price_adjustment, 2);
+            return '+' . formatCurrency($this->price_adjustment);
         } elseif ($this->price_adjustment < 0) {
-            return number_format($this->price_adjustment, 2);
+            return formatCurrency($this->price_adjustment);
         }
 
         return 'Free';

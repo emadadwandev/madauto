@@ -127,7 +127,7 @@
                         <td class="px-6 py-4 whitespace-nowrap">
                             <div class="text-sm text-gray-900">{{ $subscription->subscriptionPlan->name ?? 'N/A' }}</div>
                             @if($subscription->subscriptionPlan)
-                            <div class="text-sm text-gray-500">${{ number_format($subscription->subscriptionPlan->price, 2) }}/mo</div>
+                            <div class="text-sm text-gray-500">{{ formatCurrency($subscription->subscriptionPlan->price, config('currencies.default')) }}/mo</div>
                             @endif
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap">

@@ -98,7 +98,7 @@
                                             </td>
                                             <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                                 @if($invitation->isValid())
-                                                    <form method="POST" action="{{ route('dashboard.invitations.resend', ['subdomain' => request()->route('subdomain'), 'invitation' => $invitation->id]) }}" class="inline">
+                                                    <form method="POST" action="{{ route('dashboard.invitations.resend', ['invitation' => $invitation->id, 'subdomain' => request()->route('subdomain')]) }}" class="inline">
                                                         @csrf
                                                         <button type="submit" class="text-blue-600 hover:text-blue-900 mr-3">
                                                             Resend
@@ -107,7 +107,7 @@
                                                 @endif
 
                                                 @if(!$invitation->isAccepted())
-                                                    <form method="POST" action="{{ route('dashboard.invitations.destroy', ['subdomain' => request()->route('subdomain'), 'invitation' => $invitation->id]) }}" class="inline" onsubmit="return confirm('Are you sure you want to cancel this invitation?');">
+                                                    <form method="POST" action="{{ route('dashboard.invitations.destroy', ['invitation' => $invitation->id, 'subdomain' => request()->route('subdomain')]) }}" class="inline" onsubmit="return confirm('Are you sure you want to cancel this invitation?');">
                                                         @csrf
                                                         @method('DELETE')
                                                         <button type="submit" class="text-red-600 hover:text-red-900">

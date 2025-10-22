@@ -58,7 +58,7 @@
                             </label>
                             <div class="relative rounded-md shadow-sm">
                                 <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                    <span class="text-gray-500 sm:text-sm">AED</span>
+                                    <span class="text-gray-500 sm:text-sm">{{ currencySymbol() }}</span>
                                 </div>
                                 <input type="number"
                                        name="price_adjustment"
