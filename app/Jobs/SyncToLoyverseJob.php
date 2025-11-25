@@ -6,11 +6,13 @@ use App\Models\Order;
 use App\Services\LoyverseApiService;
 use App\Services\OrderTransformerService;
 use App\Services\UsageTrackingService;
+use App\Mail\SyncFailedEmail;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Facades\Mail;
 
 class SyncToLoyverseJob implements ShouldQueue
 {
@@ -111,6 +113,18 @@ class SyncToLoyverseJob implements ShouldQueue
         // Update order status
         $this->order->update(['status' => 'failed']);
 
+        // Send email notification if tenant has notifications enabled
+        if ($this->order->tenant && $this->order->tenant->getSetting('notify_on_failed_sync', true)) {
+            try {
+                $recipient = $this->order->tenant->users()->first();
+                if ($recipient) {
+                    Mail::to($recipient->email)->send(new SyncFailedEmail($this->order, $e->getMessage()));
+                }
+            } catch (\Exception $mailException) {
+                \Log::error('Failed to send sync failure email', ['error' => $mailException->getMessage()]);
+            }
+        }
+
         // If it's a rate limit error, release job back to queue
         if ($e->isRateLimitError()) {
             $retryAfter = $e->getRetryAfter() ?? 60;
@@ -154,6 +168,18 @@ class SyncToLoyverseJob implements ShouldQueue
 
         // Update order status
         $this->order->update(['status' => 'failed']);
+
+        // Send email notification if tenant has notifications enabled
+        if ($this->order->tenant && $this->order->tenant->getSetting('notify_on_failed_sync', true)) {
+            try {
+                $recipient = $this->order->tenant->users()->first();
+                if ($recipient) {
+                    Mail::to($recipient->email)->send(new SyncFailedEmail($this->order, $e->getMessage()));
+                }
+            } catch (\Exception $mailException) {
+                \Log::error('Failed to send sync failure email', ['error' => $mailException->getMessage()]);
+            }
+        }
 
         // Fail the job (will trigger retry if attempts remain)
         throw $e;

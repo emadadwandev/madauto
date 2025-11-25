@@ -33,6 +33,7 @@ class Menu extends Model
      * @var array<string, string>
      */
     protected $casts = [
+        'tenant_id' => 'integer',
         'is_active' => 'boolean',
         'published_at' => 'datetime',
         'metadata' => 'array',

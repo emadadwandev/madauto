@@ -1,6 +1,6 @@
 <x-guest-layout>
     <x-slot name="logo">
-        <img src="{{ asset('images/Madlogo.png') }}" alt="MAD Logo" class="w-24 h-24 mx-auto" />
+        <img src="{{ asset('images/logo-small.png') }}" alt="MAD Logo" class="w-24 h-24 mx-auto" />
         <p class="text-center text-blue-600 font-bold mt-2">MAD Delivery Automation System</p>
     </x-slot>
 

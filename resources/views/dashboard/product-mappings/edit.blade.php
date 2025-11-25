@@ -9,7 +9,7 @@
         <div class="max-w-3xl mx-auto sm:px-6 lg:px-8">
             <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
                 <div class="p-6">
-                    <form method="POST" action="{{ route('product-mappings.update', ['productMapping' => $productMapping, 'subdomain' => request()->route('subdomain')]) }}">
+                    <form method="POST" action="{{ route('product-mappings.update', ['id' => $productMapping->id, 'subdomain' => request()->route('subdomain')]) }}">
                         @csrf
                         @method('PUT')
 

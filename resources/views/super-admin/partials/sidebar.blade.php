@@ -1,5 +1,5 @@
 <div class="flex h-16 shrink-0 items-center">
-    <img class="h-12 w-auto" src="{{ asset('images/Madlogo.png') }}" alt="MAD Logo">
+    <img class="h-12 w-auto" src="{{ asset('images/logo-small.png') }}" alt="MAD Logo">
     <span class="ml-3 text-xl font-bold text-gray-900">Super Admin</span>
 </div>
 

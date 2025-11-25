@@ -1,4 +1,465 @@
-## [Date: 2025-10-23] - Dynamic Currency Support, Authorization & Invitation Fixes
+## [Date: 2025-10-25] - Bug Fix: Onboarding View Variable Naming Mismatch
+
+### Fixed - Undefined Array Key Error in Onboarding View
+- **Fixed 500 Internal Server Error on Onboarding Page**
+  - File Modified: `resources/views/dashboard/onboarding/index.blade.php`
+
+  - **Problem Identified**:
+    - Error: `Undefined array key "careem_configured"`
+    - When users visited `/dashboard/onboarding`, they got a 500 error
+    - View was trying to access `$onboardingStatus['careem_configured']`
+    - Controller was providing `$onboardingStatus['careem_webhook_configured']`
+    - Variable naming mismatch between controller and view
+
+  - **Root Cause**:
+    - Controller (`OnboardingController.php` line 48) defines status key as `careem_webhook_configured`
+    - View referenced the wrong key `careem_configured` in 4 locations (lines 86, 87, 510, 560)
+    - Additional issue: View used `$careemCredential` but controller passed `$careemWebhookCredential`
+
+  - **Solution Applied**:
+    - Replaced all instances of `careem_configured` with `careem_webhook_configured` in the view
+    - Replaced all instances of `$careemCredential` with `$careemWebhookCredential` in the view
+    - Cleared compiled view cache with `php artisan view:clear`
+
+  - **Impact**:
+    - Onboarding page now loads without errors
+    - Progress indicator correctly shows Careem webhook configuration status
+    - Webhook credentials display correctly when configured
+
+---
+
+## [Date: 2025-10-24] - Critical Bug Fix: Session Domain Configuration for Multi-Tenancy
+
+### Fixed - Session Cookie Domain for Cross-Subdomain Authentication
+- **Fixed 404 Error on New Tenant Onboarding Redirect**
+  - File Modified: `.env`
+
+  - **Problem Identified**:
+    - When users registered on the main domain (`localhost`), they were logged in and redirected to their tenant subdomain (`{tenant}.localhost`)
+    - Session cookies were domain-specific (tied to `localhost` only)
+    - Upon redirect to tenant subdomain, the session cookie was not available
+    - User appeared unauthenticated, causing 404 errors on auth-protected routes like `/dashboard/onboarding`
+
+  - **Root Cause**:
+    - `SESSION_DOMAIN` was empty in `.env` file
+    - Empty domain means cookie is tied to exact domain where it was set
+    - Cross-subdomain redirects after authentication failed
+
+  - **Solution Applied**:
+    - Set `SESSION_DOMAIN=.localhost` in `.env` file (note the leading dot)
+    - Leading dot (`.localhost`) creates wildcard cookie available across ALL subdomains:
+      - Main domain: `localhost` ✓
+      - Tenant subdomains: `emad.localhost`, `demo.localhost`, etc. ✓
+      - Admin subdomain: `admin.localhost` ✓
+    - Config cache cleared to apply changes immediately
+
+  - **Why This Matters for SaaS Multi-Tenancy**:
+    - Registration happens on main domain (public landing page)
+    - Users are logged in centrally
+    - Immediate redirect to tenant-specific subdomain
+    - Session must persist across domain boundary
+    - Without wildcard domain, every subdomain redirect breaks authentication
+
+  - **Production Note**:
+    - For production domain `yourapp.com`, set `SESSION_DOMAIN=.yourapp.com`
+    - Ensure `.env.example` has correct documentation (already present)
+    - This is critical for multi-tenant SaaS architecture with subdomain routing
+
+  - **Testing**:
+    - Register new tenant from landing page
+    - Should successfully redirect to tenant subdomain and show onboarding
+    - No authentication errors or 404s
+
+---
+
+## [Date: 2025-10-23] - Enhanced Onboarding with Complete API Configuration
+
+### Added - Comprehensive Onboarding Flow with Platform API Credentials
+- **Expanded Onboarding from 5 to 6 Steps for Complete Setup**
+  - Files Modified:
+    - `app/Http/Controllers/Dashboard/OnboardingController.php` - Added platform credential methods and enhanced status tracking
+    - `resources/views/dashboard/onboarding/index.blade.php` - Added Step 5 and enhanced Step 2
+    - `routes/tenant.php` - Added credential save routes
+
+  - **Step 2 Enhancement - Location Creation with Platform IDs**:
+    - Added optional platform ID fields to location form:
+      - Loyverse Store ID (for linking to Loyverse store)
+      - Careem Store ID (for Store API integration)
+      - Talabat Vendor ID (for POS Vendor Availability API)
+    - Marked as "Optional - for advanced features"
+    - Help text explains where to find each ID
+    - Controller updated to save platform IDs during onboarding
+
+  - **NEW Step 5 - Platform API Credentials (Optional)**:
+    - Collapsible Careem Catalog API configuration:
+      - Client ID (OAuth2)
+      - Client Secret (OAuth2)
+      - Link to Careem Partner Portal for credentials
+    - Collapsible Talabat API configuration:
+      - Client ID (OAuth2)
+      - Client Secret (OAuth2)
+      - Chain Code (restaurant chain identifier)
+      - Link to Delivery Hero Portal for credentials
+    - Benefits explanation box:
+      - Menu Publishing capability
+      - Location Status Sync capability
+      - Real-time Updates capability
+    - Skippable with clear messaging: "Skip to receive orders only"
+    - Option to complete without API credentials and configure later in Settings
+
+  - **Progress Indicator Updated**:
+    - Now shows 6 steps instead of 5
+    - Step 1: Account Settings (Currency & Timezone)
+    - Step 2: Location Creation (with optional platform IDs)
+    - Step 3: Loyverse Connection (API Token)
+    - Step 4: Careem Webhook (for receiving orders)
+    - Step 5: Platform APIs (Optional - for menu publishing)
+    - Step 6: Complete
+
+  - **Controller Methods Added**:
+    - `saveCareemCatalogCredentials()` - Save Careem Catalog API credentials
+    - `saveTalabatCredentials()` - Save Talabat API credentials with chain code
+    - Updated `index()` - Check for platform API configuration status
+    - Onboarding status now tracks:
+      - `careem_webhook_configured` - Renamed from `careem_configured` for clarity
+      - `platform_apis_configured` - NEW check for Careem Catalog or Talabat credentials
+
+  - **Routes Added**:
+    - POST `/dashboard/onboarding/careem-catalog/save` - Save Careem Catalog credentials
+    - POST `/dashboard/onboarding/talabat/save` - Save Talabat credentials
+
+  - **UX Design Highlights**:
+    - Progressive disclosure with collapsible API forms
+    - Clear benefit explanations for optional steps
+    - Visual differentiation (yellow theme for optional Step 5)
+    - Multiple completion paths:
+      - **Full Setup**: Complete all 6 steps for full functionality
+      - **Quick Setup**: Skip Step 5, configure API credentials later in Settings
+      - **Minimal Setup**: Skip both Steps 4 & 5 (not recommended)
+    - Links to partner portals for easy credential access
+    - Consistent status badges (completed, pending, optional)
+
+  - **Benefits for Tenants**:
+    1. **One-Time Setup**: All credentials configured during onboarding
+    2. **No Missing Features**: Clear explanation of what each credential enables
+    3. **Flexibility**: Can skip optional steps and configure later
+    4. **Reduced Support**: Built-in help text reduces "where do I find this?" questions
+    5. **Complete Functionality**: With full setup, tenants can:
+       - Receive orders automatically (Steps 3 & 4)
+       - Publish menus to platforms (Step 5)
+       - Sync location status and hours (Step 5 + Step 2 platform IDs)
+
+  - **Important Notes**:
+    - ✅ Step 5 is optional but recommended for full functionality
+    - ✅ Platform IDs in Step 2 enable location sync features
+    - ✅ Tenants can complete onboarding without platform APIs and still receive orders
+    - ✅ All credentials can be added/updated later via Settings → API Credentials
+    - 💡 **Best UX**: Most tenants should complete Steps 1-4 (required for order sync) and configure Step 5 later when ready to publish menus
+    - 📝 Validation ensures client IDs/secrets are required if forms are submitted
+    - 📝 Credentials stored encrypted in `api_credentials` table per tenant
+
+  - Impact: New tenants now have a **complete, guided setup experience** that covers all API integrations needed for full platform functionality, while maintaining flexibility to skip optional advanced features
+
+---
+
+## [Date: 2025-10-23] - Location Platform Sync Management (Careem & Talabat)
+
+### Added - Location Platform Sync Management for Careem and Talabat
+- **Complete Platform Integration for Location/Store Management**
+  - Files Created:
+    - `app/Services/LocationPlatformSyncService.php` - Service to sync location status and hours to platforms
+    - `database/migrations/2025_10_23_210527_add_platform_ids_to_locations_table.php` - Add platform-specific IDs
+  - Files Modified:
+    - `app/Models/Location.php` - Added `careem_store_id`, `talabat_vendor_id`, `platform_sync_status` fields
+    - `app/Services/CareemApiService.php` - Added Store API methods (updateStoreStatus, updateStoreHours, getStore)
+    - `app/Services/TalabatApiService.php` - Added vendor availability methods (updateVendorStatus, getVendorStatus)
+    - `app/Http/Controllers/Dashboard/LocationController.php` - Added sync methods (syncStatus, syncHours, updated toggle methods)
+    - `routes/tenant.php` - Added platform sync routes
+    - `resources/views/dashboard/locations/edit.blade.php` - Added platform ID fields and sync management UI
+
+  - **Features:**
+    1. **Careem Store API Integration**:
+       - Update store status (active/inactive, busy/available)
+       - Update store operating hours
+       - Retrieve store information
+       - Automatic sync when toggling location status
+
+    2. **Talabat POS Vendor Availability API Integration**:
+       - Update vendor status (ONLINE, OFFLINE, BUSY)
+       - Retrieve vendor availability status
+       - Automatic sync when toggling location status
+
+    3. **Location Model Enhancements**:
+       - `careem_store_id` - Store Careem branch/store ID for Store API
+       - `talabat_vendor_id` - Store Talabat POS vendor ID for availability API
+       - `platform_sync_status` - Track sync status, timestamps, and errors per platform
+
+    4. **Sync Service Features**:
+       - Sync to specific platforms or all configured platforms
+       - Transform opening hours to platform-specific formats
+       - Track sync status and errors in database
+       - Automatic determination of Talabat status based on is_active and is_busy flags
+
+    5. **UI Enhancements**:
+       - Platform sync management section in location edit page
+       - Visual sync status cards for Careem and Talabat
+       - One-click buttons to sync status and operating hours
+       - Real-time sync feedback with success/error messages
+       - Display last sync time and sync status badges
+       - Current location status display (active/busy)
+       - Platform ID configuration fields with helpful descriptions
+
+    6. **Controller Methods**:
+       - `syncStatus()` - Sync location active/busy status to selected platforms
+       - `syncHours()` - Sync operating hours to Careem (Talabat via catalog API)
+       - Updated `toggle()` - Automatically sync when location status changes
+       - Updated `toggleBusy()` - Automatically sync when busy mode changes
+
+    7. **Routes**:
+       - POST `/dashboard/locations/{location}/sync-status` - Sync location status
+       - POST `/dashboard/locations/{location}/sync-hours` - Sync operating hours
+
+  - **Platform-Specific Implementation:**
+    - **Careem Store API**:
+      - Endpoint: `PATCH /stores/{storeId}/status` - Update status
+      - Endpoint: `PUT /stores/{storeId}/hours` - Update hours
+      - Endpoint: `GET /stores/{storeId}` - Get store info
+      - Supports both `is_active` and `is_busy` flags
+      - Operating hours format: `[{day: 'MONDAY', open_time: '09:00', close_time: '22:00', is_open: true}, ...]`
+
+    - **Talabat POS Vendor Availability API**:
+      - Endpoint: `PATCH /pos/vendors/{vendorId}/status` - Update status
+      - Endpoint: `GET /pos/vendors/{vendorId}/status` - Get status
+      - Status mapping: `is_active=false` → OFFLINE, `is_busy=true` → BUSY, `is_active=true & is_busy=false` → ONLINE
+      - Supports optional reason parameter for status changes
+      - Operating hours managed via catalog API (not vendor availability API)
+
+  - **Usage Instructions:**
+    1. **Configure Platform IDs** (per location):
+       - Navigate to Dashboard → Locations → Edit Location
+       - Enter Careem Store ID (from Careem Partner Portal)
+       - Enter Talabat Vendor ID (from Delivery Hero Portal)
+       - Save location
+
+    2. **Sync Location Status**:
+       - Toggle location active/inactive status → Automatically syncs to all platforms
+       - Toggle location busy mode → Automatically syncs to all platforms
+       - Or manually click "Sync Status" button for specific platform
+
+    3. **Sync Operating Hours**:
+       - Update location opening hours in edit form
+       - Click "Sync Hours" button for Careem
+       - Talabat hours are managed via catalog API (menu publishing)
+
+    4. **Monitor Sync Status**:
+       - View sync status cards in location edit page
+       - Green badge = Successfully synced
+       - Red badge = Sync error (check error message)
+       - Gray badge = Never synced
+       - View last sync timestamp
+
+  - **Important Notes:**
+    - ✅ Each location can have unique platform IDs (supports multi-location setups)
+    - ✅ Sync status is tracked per platform in `platform_sync_status` JSON field
+    - ✅ Automatic sync on toggle ensures platforms stay in sync with local status
+    - ✅ Manual sync buttons provide control for specific platform updates
+    - ⚠️ Platform IDs must be configured for sync to work
+    - ⚠️ Platform API credentials must be configured in Settings → API Credentials
+    - 💡 Careem supports both status and hours sync
+    - 💡 Talabat status sync via POS API, hours sync via catalog API (menu publishing)
+    - 📝 **TODO**: Update Careem Store API endpoints once official documentation is reviewed
+    - 📝 **TODO**: Update Talabat vendor availability endpoints once official documentation is reviewed
+
+  - Impact: Locations can now **automatically synchronize** their status and operating hours to Careem and Talabat platforms in real-time
+
+---
+
+## [Date: 2025-10-23] - Null Tenant Error Fix in Super Admin Subscriptions
+
+### Fixed - Null Tenant Reference Error in Super Admin Subscription Views
+- **Added Null Checks for Tenant Relationships in Subscription Views**
+  - Files Modified:
+    - `resources/views/super-admin/subscriptions/index.blade.php` - Added tenant null checks in table rows
+    - `resources/views/super-admin/subscriptions/show.blade.php` - Added tenant null checks throughout detail page
+  - Issue: `ErrorException: Attempt to read property "name" on null`
+  - Root Cause: Some subscriptions in database have orphaned tenant references (tenant_id points to deleted tenant)
+  - Fix:
+    - Added `@if($subscription->tenant)` conditional checks before accessing tenant properties
+    - Display "Tenant Deleted" with tenant ID when tenant is missing
+    - Show warning message in detail page when tenant not found
+  - Impact: Super admin can now safely view all subscriptions without errors, even those with deleted tenants
+  - Views now gracefully handle:
+    - Deleted tenants in subscription list with red "Tenant Deleted" badge
+    - Detailed error message in subscription detail page with tenant ID reference
+    - Prevents crashes when viewing orphaned subscription records
+
+---
+
+## [Date: 2025-10-23] - Menu Publishing to Platforms, Menu Management Enhancement, Currency Display Fix, Menu Preview Fix, Dynamic Currency Support, Authorization & Invitation Fixes
+
+### Fixed - Method Not Allowed Error on Menu Publish
+- **Changed Publish/Unpublish Routes from PATCH to POST**
+  - Files Modified:
+    - `routes/tenant.php` - Changed publish/unpublish routes from PATCH to POST
+    - `resources/views/dashboard/menus/edit.blade.php` - Removed @method('PATCH')
+    - `resources/views/dashboard/menus/index.blade.php` - Removed @method('PATCH')
+  - Issue: `MethodNotAllowedHttpException: The GET method is not supported for route dashboard/menus/3/publish. Supported methods: PATCH.`
+  - Root Cause: Routes used PATCH method which caused 405 errors when URL accessed directly
+  - Fix: Changed routes to use POST method (standard for state-changing operations)
+  - Impact: Menu publish/unpublish now works reliably without method errors
+
+### Fixed - Type Error in Menu Publishing Job
+- **Type Mismatch When Dispatching SyncMenuToPlatformJob**
+  - Files Modified:
+    - `app/Http/Controllers/Dashboard/MenuController.php` - Cast tenant_id to integer
+    - `app/Models/Menu.php` - Added tenant_id integer casting
+  - Issue: `SyncMenuToPlatformJob::__construct(): Argument #3 ($tenantId) must be of type int, string given`
+  - Root Cause: SQLite database returns integer columns as strings, causing type mismatch
+  - Fix: Added explicit `(int)` cast when passing tenant_id to job constructor
+  - Prevention: Added `'tenant_id' => 'integer'` to Menu model's `$casts` array
+  - Impact: Menu publishing now works correctly without type errors
+
+### Added - Menu Publishing to Delivery Platforms (Careem & Talabat)
+- **Complete Platform Integration System** for publishing menus to delivery platforms
+  - Files Created:
+    - `config/platforms.php` - Platform API configuration
+    - `app/Services/CareemApiService.php` - Careem catalog API integration (tenant-specific)
+    - `app/Services/TalabatApiService.php` - Talabat (Delivery Hero) catalog API integration (tenant-specific)
+    - `app/Services/CareemMenuTransformer.php` - Menu to Careem format transformer
+    - `app/Services/TalabatMenuTransformer.php` - Menu to Delivery Hero catalog format transformer
+    - `app/Jobs/SyncMenuToPlatformJob.php` - Async menu sync queue job
+    - `app/Exceptions/PlatformApiException.php` - Platform API error handling
+    - `app/Http/Controllers/Api/PlatformCallbackController.php` - Platform callback handler
+  - Files Modified:
+    - `app/Http/Controllers/Dashboard/ApiCredentialController.php` - Added platform catalog credential management
+    - `app/Http/Controllers/Dashboard/MenuController.php` - Updated publish() and show() methods
+    - `resources/views/dashboard/api-credentials/index.blade.php` - Added platform catalog credential forms
+    - `resources/views/dashboard/menus/show.blade.php` - Added platform sync status UI
+    - `routes/tenant.php` - Added platform catalog credential routes
+    - `routes/api.php` - Added platform callback routes
+    - `.env.example` - Added platform API credentials (for development only)
+  - **Features:**
+    1. **OAuth 2.0 Authentication** - Client credentials flow for both platforms
+    2. **Menu Transformation** - Converts Laravel menu structure to platform-specific formats:
+       - **Talabat**: Flat dictionary structure with Products, Categories, Toppings, Menu, Schedule
+       - **Careem**: Hierarchical JSON with categories, items, and modifier groups
+    3. **Async Syncing** - Queue-based with retry logic (3 attempts, exponential backoff)
+    4. **Platform Callbacks** - Receives async validation results from platforms
+    5. **Sync Status Tracking** - Real-time status updates (pending → syncing → synced/failed)
+    6. **Visual UI** - Color-coded badges showing sync status for each platform
+    7. **Error Handling** - Detailed error logging and user-friendly messages
+    8. **Tenant-Specific Credentials** - Each tenant stores and uses their own platform API keys (SaaS-ready)
+    9. **Credential Management UI** - Beautiful, user-friendly forms for configuring platform credentials
+    10. **Connection Testing** - Test platform API connections with one click
+  - **Platform-Specific Implementation:**
+    - **Talabat (Delivery Hero):**
+      - Endpoint: `PUT /v2/chains/{chainCode}/catalog`
+      - Requires full catalog push (no partial updates)
+      - Async validation with callback support
+      - Supports Products, Variants, Categories, Toppings, Menus, Schedules, Images
+    - **Careem:**
+      - Configurable endpoints (adjust based on documentation)
+      - Supports create/update/delete operations
+      - JSON catalog format with categories and items
+  - **Setup Instructions (Per Tenant):**
+    1. **Navigate to Settings → API Credentials** in tenant dashboard
+    2. **Configure Careem Catalog API:**
+       - Enter Client ID and Client Secret from Careem Partner Portal
+       - Optionally provide Restaurant ID and custom API URL
+       - Click "Test Careem Connection" to verify credentials
+    3. **Configure Talabat Catalog API:**
+       - Enter Client ID and Client Secret from Delivery Hero Portal
+       - Provide Chain Code (restaurant chain identifier)
+       - Optionally provide Vendor ID and custom API URL
+       - Click "Test Talabat Connection" to verify credentials
+    4. **Start queue worker** (if not already running): `php artisan queue:work platform-sync`
+    5. **Create menu** with items, modifiers, locations, and assign platforms
+    6. **Click "Publish"** to trigger automatic sync to platforms
+    7. **Monitor sync status** in menu preview page (real-time updates)
+  - **Important Notes:**
+    - ✅ Each tenant manages their own platform credentials (fully multi-tenant)
+    - ✅ Credentials are stored encrypted in `api_credentials` table
+    - ✅ `.env` credentials are only fallback for development/testing
+    - ⚠️ Menu publishing will fail if tenant credentials are not configured
+    - 💡 Test connections before publishing to ensure credentials are correct
+  - Impact: Menus are now **automatically synchronized** to Careem and Talabat when published
+
+### Fixed - Hardcoded Currency in Menu Views
+- **Replaced Hardcoded "AED" with Dynamic Currency Formatting**
+  - Files Modified:
+    - `resources/views/dashboard/menus/show.blade.php` (modified)
+    - `resources/views/dashboard/menus/edit.blade.php` (modified)
+    - `resources/views/dashboard/product-mappings/create.blade.php` (modified)
+  - Issue: Currency was hardcoded as "AED" or formatted without currency symbol in menu/product displays
+    - Menu views: `AED {{ number_format($item->price, 2) }}`
+    - Product mapping: `{{ number_format($item['price'], 2) }}` (no currency)
+  - Root Cause: Views were not using the existing `formatCurrency()` helper function
+  - Solution: Replaced hardcoded currency with dynamic helper in all locations
+    - Before: `AED {{ number_format($item->price, 2) }}`
+    - After: `{{ formatCurrency($item->price) }}`
+  - How it Works:
+    - `formatCurrency()` helper ([app/helpers.php](app/helpers.php#L183-L211)) automatically:
+      - Gets tenant's currency from settings via `tenant()->getCurrency()`
+      - Retrieves currency config from [config/currencies.php](config/currencies.php) (13 supported currencies)
+      - Formats with proper decimals, separators, and symbol positioning
+      - Examples: "د.إ 2.00" (AED), "$2.00" (USD), "₹2.00" (INR), "د.ك 2.000" (KWD - 3 decimals)
+  - Benefits:
+    - **Multi-currency support**: Each tenant can use their preferred currency
+    - **Proper formatting**: Respects currency-specific decimal places (KWD: 3, USD: 2)
+    - **Correct symbol position**: Before/after amount based on currency standards
+    - **Localized separators**: Different decimal/thousands separators per currency
+  - Impact: All menu and product prices now display in tenant's configured currency
+  - Fixed Locations:
+    - Menu preview page (show.blade.php)
+    - Menu edit page (edit.blade.php)
+    - Product mapping Loyverse item selector (create.blade.php)
+  - Note: Subscription plan pricing (landing/register.blade.php) intentionally kept in USD as it represents platform subscription costs, not tenant menu items
+
+### Enhanced - Menu Management UI
+- **Added Hide/Show Menu Option to Dropdown Menu** for better UX
+  - File: `resources/views/dashboard/menus/index.blade.php` (modified)
+  - Added "Hide Menu" / "Show Menu" option to three-dot dropdown menu
+  - Menu now has three ways to toggle visibility:
+    1. Click Active/Inactive badge (existing)
+    2. Use dropdown menu option (new)
+    3. Direct form submission (programmatic)
+  - UI Improvements:
+    - Added SVG icons to all dropdown menu items for better visual hierarchy
+    - Added eye-slash icon for "Hide Menu" action
+    - Added eye icon for "Show Menu" action
+    - Added dividers to separate menu sections (actions / duplicate / delete)
+    - Icons added: Publish (check-circle), Unpublish (x-circle), Hide/Show (eye), Duplicate (copy), Delete (trash)
+    - Added smooth Alpine.js transitions (fade + scale animation)
+  - Dropdown Positioning Fix:
+    - **Issue**: Dropdown menu was being clipped by card's `overflow-hidden`
+    - **Fix**: Removed `overflow-hidden` from card container
+    - **Solution**: Added `sm:rounded-t-lg` to image section to preserve rounded corners
+    - **Z-index**: Increased dropdown z-index from `z-10` to `z-50` for proper layering
+    - **Shadow**: Upgraded to `shadow-xl` for better visual separation when overlaying
+    - **Animation**: Added Alpine.js enter/leave transitions for smooth appearance
+  - Benefits:
+    - **Consistent UX**: All menu actions accessible from one dropdown
+    - **Visual clarity**: Icons help users quickly identify actions
+    - **Better organization**: Dividers group related actions
+    - **Proper layering**: Dropdown now appears above card without truncation
+    - **Smooth animation**: Professional fade-in/fade-out effect
+  - Impact: Users can now hide/show menus from the same dropdown where they perform other actions, with proper visual presentation
+
+## [Date: 2025-10-23] - Menu Preview Fix, Dynamic Currency Support, Authorization & Invitation Fixes
+
+### Fixed - Menu Preview BadMethodCallException Error
+- **Menu Controller Eager Loading Issue** causing error when viewing menu preview
+  - Files: `app/Http/Controllers/Dashboard/MenuController.php` (modified)
+  - Issue: `BadMethodCallException: Method Illuminate\Support\Collection::addEagerConstraints does not exist`
+  - Root Cause: Attempting to eager load `platformSyncs` which is not a relationship
+    - `platformSyncs()` in Menu model is a regular method that returns a Collection
+    - Laravel's `->load()` expects relationship methods (HasMany, BelongsTo, etc.)
+    - Cannot eager load methods that directly query and return Collections
+  - Fix: Removed `platformSyncs` from eager loading array in `show()` method
+    - Changed: `$menu->load(['items.modifierGroups.modifiers', 'locations', 'platformSyncs'])`
+    - To: `$menu->load(['items.modifierGroups.modifiers', 'locations'])`
+  - Note: View can still access platform syncs by calling `$menu->platformSyncs()` as a method
+  - Impact: Menu preview page now loads successfully without errors
 
 ### Fixed - Invitation Route Parameter Error
 - **Route Parameter Order & Type Mismatch** causing errors on invitation actions

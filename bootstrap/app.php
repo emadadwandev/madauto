@@ -30,6 +30,13 @@ return Application::configure(basePath: dirname(__DIR__))
                 ->middleware('web')
                 ->group(base_path('routes/web.php'));
 
+            // Allow 127.0.0.1 for local development to access landing page
+            if ($domain === 'localhost') {
+                Route::domain('127.0.0.1')
+                    ->middleware('web')
+                    ->group(base_path('routes/web.php'));
+            }
+
             Route::domain("www.{$domain}")
                 ->middleware('web')
                 ->group(base_path('routes/web.php'));

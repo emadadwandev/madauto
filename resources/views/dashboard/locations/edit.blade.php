@@ -146,6 +146,39 @@
                         @error('platforms')
                             <p class="text-red-600 text-sm mt-2">{{ $message }}</p>
                         @enderror
+
+                        <!-- Platform IDs -->
+                        <div class="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label for="careem_store_id" class="block text-sm font-medium text-gray-700 mb-2">
+                                    Careem Store ID
+                                    <span class="text-gray-500 font-normal">(for Store API sync)</span>
+                                </label>
+                                <input type="text" name="careem_store_id" id="careem_store_id"
+                                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500"
+                                       value="{{ old('careem_store_id', $location->careem_store_id) }}"
+                                       placeholder="e.g., STORE-12345">
+                                <p class="text-xs text-gray-500 mt-1">Required for syncing location status and hours to Careem</p>
+                                @error('careem_store_id')
+                                    <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
+                                @enderror
+                            </div>
+
+                            <div>
+                                <label for="talabat_vendor_id" class="block text-sm font-medium text-gray-700 mb-2">
+                                    Talabat Vendor ID
+                                    <span class="text-gray-500 font-normal">(for POS API sync)</span>
+                                </label>
+                                <input type="text" name="talabat_vendor_id" id="talabat_vendor_id"
+                                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500"
+                                       value="{{ old('talabat_vendor_id', $location->talabat_vendor_id) }}"
+                                       placeholder="e.g., VENDOR-67890">
+                                <p class="text-xs text-gray-500 mt-1">Required for syncing location status to Talabat</p>
+                                @error('talabat_vendor_id')
+                                    <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
+                                @enderror
+                            </div>
+                        </div>
                     </div>
 
                     <!-- Opening Hours -->
@@ -197,6 +230,218 @@
                     </div>
                 </form>
             </div>
+
+            <!-- Platform Sync Section -->
+            @if(count($location->platforms ?? []) > 0)
+            <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg mt-6" x-data="locationPlatformSync()">
+                <div class="p-6">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4">Platform Sync Management</h3>
+                    <p class="text-sm text-gray-600 mb-6">Sync location status and operating hours to delivery platforms.</p>
+
+                    <!-- Platform Sync Cards -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                        @if(in_array('careem', $location->platforms ?? []))
+                        <!-- Careem Card -->
+                        <div class="border border-gray-200 rounded-lg p-4">
+                            <div class="flex items-center justify-between mb-3">
+                                <div class="flex items-center">
+                                    <div class="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center mr-3">
+                                        <svg class="w-6 h-6 text-green-600" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
+                                    </div>
+                                    <div>
+                                        <h4 class="font-medium text-gray-900">Careem</h4>
+                                        @if($location->careem_store_id)
+                                            <p class="text-xs text-gray-500">Store ID: {{ $location->careem_store_id }}</p>
+                                        @else
+                                            <p class="text-xs text-red-600">Store ID not configured</p>
+                                        @endif
+                                    </div>
+                                </div>
+                                @if(isset($location->platform_sync_status['careem']['status']))
+                                    @if($location->platform_sync_status['careem']['status'] === 'success')
+                                        <span class="px-2 py-1 text-xs rounded-full bg-green-100 text-green-800">Synced</span>
+                                    @else
+                                        <span class="px-2 py-1 text-xs rounded-full bg-red-100 text-red-800">Error</span>
+                                    @endif
+                                @else
+                                    <span class="px-2 py-1 text-xs rounded-full bg-gray-100 text-gray-800">Not Synced</span>
+                                @endif
+                            </div>
+
+                            @if(isset($location->platform_sync_status['careem']['last_sync']))
+                                <p class="text-xs text-gray-500 mb-3">
+                                    Last synced: {{ \Carbon\Carbon::parse($location->platform_sync_status['careem']['last_sync'])->diffForHumans() }}
+                                </p>
+                            @endif
+
+                            <div class="flex gap-2">
+                                <button @click="syncStatus('careem')"
+                                        :disabled="syncing"
+                                        class="flex-1 px-3 py-2 text-sm bg-green-600 text-white rounded hover:bg-green-700 disabled:opacity-50">
+                                    <span x-show="!syncing">Sync Status</span>
+                                    <span x-show="syncing">Syncing...</span>
+                                </button>
+                                <button @click="syncHours('careem')"
+                                        :disabled="syncing"
+                                        class="flex-1 px-3 py-2 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50">
+                                    <span x-show="!syncing">Sync Hours</span>
+                                    <span x-show="syncing">Syncing...</span>
+                                </button>
+                            </div>
+                        </div>
+                        @endif
+
+                        @if(in_array('talabat', $location->platforms ?? []))
+                        <!-- Talabat Card -->
+                        <div class="border border-gray-200 rounded-lg p-4">
+                            <div class="flex items-center justify-between mb-3">
+                                <div class="flex items-center">
+                                    <div class="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center mr-3">
+                                        <svg class="w-6 h-6 text-orange-600" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
+                                    </div>
+                                    <div>
+                                        <h4 class="font-medium text-gray-900">Talabat</h4>
+                                        @if($location->talabat_vendor_id)
+                                            <p class="text-xs text-gray-500">Vendor ID: {{ $location->talabat_vendor_id }}</p>
+                                        @else
+                                            <p class="text-xs text-red-600">Vendor ID not configured</p>
+                                        @endif
+                                    </div>
+                                </div>
+                                @if(isset($location->platform_sync_status['talabat']['status']))
+                                    @if($location->platform_sync_status['talabat']['status'] === 'success')
+                                        <span class="px-2 py-1 text-xs rounded-full bg-green-100 text-green-800">Synced</span>
+                                    @else
+                                        <span class="px-2 py-1 text-xs rounded-full bg-red-100 text-red-800">Error</span>
+                                    @endif
+                                @else
+                                    <span class="px-2 py-1 text-xs rounded-full bg-gray-100 text-gray-800">Not Synced</span>
+                                @endif
+                            </div>
+
+                            @if(isset($location->platform_sync_status['talabat']['last_sync']))
+                                <p class="text-xs text-gray-500 mb-3">
+                                    Last synced: {{ \Carbon\Carbon::parse($location->platform_sync_status['talabat']['last_sync'])->diffForHumans() }}
+                                </p>
+                            @endif
+
+                            <div class="flex gap-2">
+                                <button @click="syncStatus('talabat')"
+                                        :disabled="syncing"
+                                        class="flex-1 px-3 py-2 text-sm bg-orange-600 text-white rounded hover:bg-orange-700 disabled:opacity-50">
+                                    <span x-show="!syncing">Sync Status</span>
+                                    <span x-show="syncing">Syncing...</span>
+                                </button>
+                            </div>
+                            <p class="text-xs text-gray-500 mt-2">
+                                <strong>Note:</strong> Operating hours for Talabat are managed via catalog API.
+                            </p>
+                        </div>
+                        @endif
+                    </div>
+
+                    <!-- Current Status Display -->
+                    <div class="bg-gray-50 rounded-lg p-4">
+                        <h4 class="font-medium text-gray-900 mb-2">Current Status</h4>
+                        <div class="grid grid-cols-2 gap-4 text-sm">
+                            <div>
+                                <span class="text-gray-600">Active:</span>
+                                <span class="font-medium ml-2">{{ $location->is_active ? 'Yes' : 'No' }}</span>
+                            </div>
+                            <div>
+                                <span class="text-gray-600">Busy:</span>
+                                <span class="font-medium ml-2">{{ $location->is_busy ? 'Yes' : 'No' }}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Sync Results Display -->
+                    <div x-show="syncResults" x-cloak class="mt-4 p-4 rounded-lg"
+                         :class="syncSuccess ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200'">
+                        <p class="text-sm font-medium" :class="syncSuccess ? 'text-green-800' : 'text-red-800'" x-text="syncMessage"></p>
+                    </div>
+                </div>
+            </div>
+
+            <script>
+                function locationPlatformSync() {
+                    return {
+                        syncing: false,
+                        syncResults: false,
+                        syncSuccess: false,
+                        syncMessage: '',
+
+                        async syncStatus(platform) {
+                            this.syncing = true;
+                            this.syncResults = false;
+
+                            try {
+                                const response = await fetch('{{ route("dashboard.locations.sync-status", ["location" => $location, "subdomain" => request()->route("subdomain")]) }}', {
+                                    method: 'POST',
+                                    headers: {
+                                        'Content-Type': 'application/json',
+                                        'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                                        'Accept': 'application/json'
+                                    },
+                                    body: JSON.stringify({
+                                        platforms: [platform]
+                                    })
+                                });
+
+                                const data = await response.json();
+                                this.syncResults = true;
+                                this.syncSuccess = data.success;
+                                this.syncMessage = data.message;
+
+                                if (data.success) {
+                                    setTimeout(() => window.location.reload(), 1500);
+                                }
+                            } catch (error) {
+                                this.syncResults = true;
+                                this.syncSuccess = false;
+                                this.syncMessage = 'Failed to sync: ' + error.message;
+                            } finally {
+                                this.syncing = false;
+                            }
+                        },
+
+                        async syncHours(platform) {
+                            this.syncing = true;
+                            this.syncResults = false;
+
+                            try {
+                                const response = await fetch('{{ route("dashboard.locations.sync-hours", ["location" => $location, "subdomain" => request()->route("subdomain")]) }}', {
+                                    method: 'POST',
+                                    headers: {
+                                        'Content-Type': 'application/json',
+                                        'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                                        'Accept': 'application/json'
+                                    },
+                                    body: JSON.stringify({
+                                        platforms: [platform]
+                                    })
+                                });
+
+                                const data = await response.json();
+                                this.syncResults = true;
+                                this.syncSuccess = data.success;
+                                this.syncMessage = data.message;
+
+                                if (data.success) {
+                                    setTimeout(() => window.location.reload(), 1500);
+                                }
+                            } catch (error) {
+                                this.syncResults = true;
+                                this.syncSuccess = false;
+                                this.syncMessage = 'Failed to sync hours: ' + error.message;
+                            } finally {
+                                this.syncing = false;
+                            }
+                        }
+                    }
+                }
+            </script>
+            @endif
         </div>
     </div>
 </x-app-layout>

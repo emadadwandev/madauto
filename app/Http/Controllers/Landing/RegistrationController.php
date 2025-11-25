@@ -12,6 +12,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rules;
+use App\Mail\WelcomeTenantEmail;
+use Illuminate\Support\Facades\Mail;
 
 class RegistrationController extends Controller
 {
@@ -89,6 +91,13 @@ class RegistrationController extends Controller
             $subscription = $this->subscriptionService->subscribe($tenant, $plan, true);
 
             DB::commit();
+
+            // Send welcome email
+            try {
+                Mail::to($user->email)->send(new WelcomeTenantEmail($tenant, $user, $request->password));
+            } catch (\Exception $e) {
+                \Log::error('Failed to send welcome email', ['error' => $e->getMessage()]);
+            }
 
             // Log the user in
             auth()->login($user);

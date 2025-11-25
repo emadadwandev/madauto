@@ -24,7 +24,7 @@ class ProductMappingController extends Controller
     /**
      * Display product mappings list
      */
-    public function index(Request $request)
+    public function index(Request $request, $subdomain)
     {
         $query = ProductMapping::query();
 
@@ -56,7 +56,7 @@ class ProductMappingController extends Controller
     /**
      * Show create form
      */
-    public function create()
+    public function create($subdomain)
     {
         // Get all Loyverse items for dropdown
         $loyverseItems = $this->productMappingService->getAllLoyverseItemsForMapping();
@@ -67,7 +67,7 @@ class ProductMappingController extends Controller
     /**
      * Store new mapping
      */
-    public function store(Request $request)
+    public function store(Request $request, $subdomain)
     {
         $validated = $request->validate([
             'platform' => 'required|in:careem,talabat',
@@ -104,20 +104,42 @@ class ProductMappingController extends Controller
     }
 
     /**
+     * Helper to find mapping bypassing global scopes
+     */
+    private function findMapping($id)
+    {
+        $mapping = ProductMapping::withoutGlobalScope(\App\Models\Scopes\TenantScope::class)->find($id);
+
+        if (! $mapping) {
+            abort(404);
+        }
+
+        $tenantContext = app(\App\Services\TenantContext::class);
+        if ($mapping->tenant_id !== $tenantContext->id()) {
+            abort(404);
+        }
+
+        return $mapping;
+    }
+
+    /**
      * Show edit form
      */
-    public function edit(ProductMapping $productMapping)
+    public function edit($subdomain, $id)
     {
+        $model = $this->findMapping($id);
         $loyverseItems = $this->productMappingService->getAllLoyverseItemsForMapping();
 
-        return view('dashboard.product-mappings.edit', compact('productMapping', 'loyverseItems'));
+        return view('dashboard.product-mappings.edit', ['productMapping' => $model, 'loyverseItems' => $loyverseItems]);
     }
 
     /**
      * Update mapping
      */
-    public function update(Request $request, ProductMapping $productMapping)
+    public function update(Request $request, $subdomain, $id)
     {
+        $model = $this->findMapping($id);
+
         $validated = $request->validate([
             'platform' => 'required|in:careem,talabat',
             'platform_product_id' => 'required|string',
@@ -131,7 +153,7 @@ class ProductMappingController extends Controller
         // Check for duplicate (excluding current mapping)
         $exists = ProductMapping::where('platform', $validated['platform'])
             ->where('platform_product_id', $validated['platform_product_id'])
-            ->where('id', '!=', $productMapping->id)
+            ->where('id', '!=', $model->id)
             ->exists();
 
         if ($exists) {
@@ -140,7 +162,7 @@ class ProductMappingController extends Controller
                 ->withErrors(['platform_product_id' => 'This product mapping already exists for the selected platform.']);
         }
 
-        $productMapping->update($validated);
+        $model->update($validated);
 
         // Clear cache
         $this->productMappingService->clearCache();
@@ -153,9 +175,10 @@ class ProductMappingController extends Controller
     /**
      * Delete mapping
      */
-    public function destroy(ProductMapping $productMapping)
+    public function destroy($subdomain, $id)
     {
-        $productMapping->delete();
+        $mapping = $this->findMapping($id);
+        $mapping->delete();
 
         // Clear cache
         $this->productMappingService->clearCache();
@@ -168,9 +191,10 @@ class ProductMappingController extends Controller
     /**
      * Toggle mapping status
      */
-    public function toggle(ProductMapping $productMapping)
+    public function toggle($subdomain, $id)
     {
-        $productMapping->update(['is_active' => ! $productMapping->is_active]);
+        $model = $this->findMapping($id);
+        $model->update(['is_active' => ! $model->is_active]);
 
         // Clear cache
         $this->productMappingService->clearCache();

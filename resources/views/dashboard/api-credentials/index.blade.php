@@ -149,6 +149,254 @@
                 </div>
             </div>
 
+            <!-- Divider -->
+            <div class="my-8 border-t-4 border-indigo-500"></div>
+            <div class="text-center mb-6">
+                <h2 class="text-2xl font-bold text-gray-900">Platform Catalog API Settings</h2>
+                <p class="text-gray-600 mt-2">Configure menu publishing to Careem and Talabat</p>
+            </div>
+
+            <!-- Careem Catalog API -->
+            <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg mb-4">
+                <div class="p-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-lg font-semibold">Careem Catalog API (Menu Publishing)</h3>
+                        @if($credentials->has('careem_catalog'))
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                ✓ Configured
+                            </span>
+                        @else
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                                Not Configured
+                            </span>
+                        @endif
+                    </div>
+
+                    <div class="bg-blue-50 border-l-4 border-blue-400 p-4 mb-4">
+                        <div class="flex">
+                            <div class="flex-shrink-0">
+                                <svg class="h-5 w-5 text-blue-400" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
+                                </svg>
+                            </div>
+                            <div class="ml-3">
+                                <p class="text-sm text-blue-700">
+                                    <strong>What is this?</strong> These credentials allow the system to automatically publish your menus to Careem when you click "Publish" in the menu management area.
+                                    <br><strong>Get credentials:</strong> Contact your Careem account manager or visit the Careem Partner Portal to request Catalog API access.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <form method="POST" action="{{ route('api-credentials.careem-catalog.store', ['subdomain' => request()->route('subdomain')]) }}" class="space-y-4">
+                        @csrf
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label for="careem_client_id" class="block text-gray-700 text-sm font-bold mb-2">
+                                    Client ID *
+                                </label>
+                                <input
+                                    type="text"
+                                    name="client_id"
+                                    id="careem_client_id"
+                                    value="{{ $credentials->get('careem_catalog')?->credentials['client_id'] ?? '' }}"
+                                    placeholder="Enter Careem Client ID"
+                                    class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                                    required>
+                            </div>
+
+                            <div>
+                                <label for="careem_client_secret" class="block text-gray-700 text-sm font-bold mb-2">
+                                    Client Secret *
+                                </label>
+                                <input
+                                    type="password"
+                                    name="client_secret"
+                                    id="careem_client_secret"
+                                    placeholder="Enter Careem Client Secret"
+                                    class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                                    required>
+                                <p class="text-gray-600 text-xs italic mt-1">For security, secret is not displayed after saving</p>
+                            </div>
+
+                            <div>
+                                <label for="careem_restaurant_id" class="block text-gray-700 text-sm font-bold mb-2">
+                                    Restaurant ID (Optional)
+                                </label>
+                                <input
+                                    type="text"
+                                    name="restaurant_id"
+                                    id="careem_restaurant_id"
+                                    value="{{ $credentials->get('careem_catalog')?->credentials['restaurant_id'] ?? '' }}"
+                                    placeholder="Your Careem Restaurant ID"
+                                    class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
+                            </div>
+
+                            <div>
+                                <label for="careem_api_url" class="block text-gray-700 text-sm font-bold mb-2">
+                                    API URL (Optional - Leave blank for default)
+                                </label>
+                                <input
+                                    type="url"
+                                    name="api_url"
+                                    id="careem_api_url"
+                                    value="{{ $credentials->get('careem_catalog')?->credentials['api_url'] ?? '' }}"
+                                    placeholder="https://api-staging.careemnow.com"
+                                    class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
+                            </div>
+                        </div>
+
+                        <div class="flex items-center gap-4">
+                            <button type="submit" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded">
+                                💾 Save Careem Credentials
+                            </button>
+                        </div>
+                    </form>
+
+                    <!-- Test Connection -->
+                    @if($credentials->has('careem_catalog'))
+                        <div class="mt-6 pt-6 border-t">
+                            <form method="POST" action="{{ route('api-credentials.careem-catalog.test', ['subdomain' => request()->route('subdomain')]) }}">
+                                @csrf
+                                <button type="submit" class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded">
+                                    🔌 Test Careem Connection
+                                </button>
+                                <p class="text-gray-600 text-xs italic mt-2">Tests OAuth authentication with Careem's API</p>
+                            </form>
+                        </div>
+                    @endif
+                </div>
+            </div>
+
+            <!-- Talabat Catalog API -->
+            <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg mb-4">
+                <div class="p-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-lg font-semibold">Talabat Catalog API (Menu Publishing)</h3>
+                        @if($credentials->has('talabat'))
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                ✓ Configured
+                            </span>
+                        @else
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                                Not Configured
+                            </span>
+                        @endif
+                    </div>
+
+                    <div class="bg-orange-50 border-l-4 border-orange-400 p-4 mb-4">
+                        <div class="flex">
+                            <div class="flex-shrink-0">
+                                <svg class="h-5 w-5 text-orange-400" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
+                                </svg>
+                            </div>
+                            <div class="ml-3">
+                                <p class="text-sm text-orange-700">
+                                    <strong>What is this?</strong> These credentials allow the system to automatically publish your menus to Talabat (Delivery Hero) when you click "Publish" in the menu management area.
+                                    <br><strong>Get credentials:</strong> Contact your Talabat account manager or visit the Delivery Hero Partner Portal to request POS Middleware API access.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <form method="POST" action="{{ route('api-credentials.talabat-catalog.store', ['subdomain' => request()->route('subdomain')]) }}" class="space-y-4">
+                        @csrf
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label for="talabat_client_id" class="block text-gray-700 text-sm font-bold mb-2">
+                                    Client ID *
+                                </label>
+                                <input
+                                    type="text"
+                                    name="client_id"
+                                    id="talabat_client_id"
+                                    value="{{ $credentials->get('talabat')?->credentials['client_id'] ?? '' }}"
+                                    placeholder="Enter Talabat Client ID"
+                                    class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                                    required>
+                            </div>
+
+                            <div>
+                                <label for="talabat_client_secret" class="block text-gray-700 text-sm font-bold mb-2">
+                                    Client Secret *
+                                </label>
+                                <input
+                                    type="password"
+                                    name="client_secret"
+                                    id="talabat_client_secret"
+                                    placeholder="Enter Talabat Client Secret"
+                                    class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                                    required>
+                                <p class="text-gray-600 text-xs italic mt-1">For security, secret is not displayed after saving</p>
+                            </div>
+
+                            <div>
+                                <label for="talabat_chain_code" class="block text-gray-700 text-sm font-bold mb-2">
+                                    Chain Code *
+                                </label>
+                                <input
+                                    type="text"
+                                    name="chain_code"
+                                    id="talabat_chain_code"
+                                    value="{{ $credentials->get('talabat')?->credentials['chain_code'] ?? '' }}"
+                                    placeholder="Your Talabat Chain Code"
+                                    class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                                    required>
+                                <p class="text-gray-600 text-xs italic mt-1">Restaurant chain identifier (e.g., "my_restaurant_chain")</p>
+                            </div>
+
+                            <div>
+                                <label for="talabat_vendor_id" class="block text-gray-700 text-sm font-bold mb-2">
+                                    Vendor ID (Optional)
+                                </label>
+                                <input
+                                    type="text"
+                                    name="vendor_id"
+                                    id="talabat_vendor_id"
+                                    value="{{ $credentials->get('talabat')?->credentials['vendor_id'] ?? '' }}"
+                                    placeholder="Your Talabat Vendor ID"
+                                    class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
+                            </div>
+
+                            <div class="md:col-span-2">
+                                <label for="talabat_api_url" class="block text-gray-700 text-sm font-bold mb-2">
+                                    API URL (Optional - Leave blank for default)
+                                </label>
+                                <input
+                                    type="url"
+                                    name="api_url"
+                                    id="talabat_api_url"
+                                    value="{{ $credentials->get('talabat')?->credentials['api_url'] ?? '' }}"
+                                    placeholder="https://integration-middleware.stg.restaurant-partners.com"
+                                    class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
+                            </div>
+                        </div>
+
+                        <div class="flex items-center gap-4">
+                            <button type="submit" class="bg-orange-500 hover:bg-orange-700 text-white font-bold py-2 px-6 rounded">
+                                💾 Save Talabat Credentials
+                            </button>
+                        </div>
+                    </form>
+
+                    <!-- Test Connection -->
+                    @if($credentials->has('talabat'))
+                        <div class="mt-6 pt-6 border-t">
+                            <form method="POST" action="{{ route('api-credentials.talabat-catalog.test', ['subdomain' => request()->route('subdomain')]) }}">
+                                @csrf
+                                <button type="submit" class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded">
+                                    🔌 Test Talabat Connection
+                                </button>
+                                <p class="text-gray-600 text-xs italic mt-2">Tests OAuth authentication with Talabat's Delivery Hero API</p>
+                            </form>
+                        </div>
+                    @endif
+                </div>
+            </div>
+
             <!-- Saved Credentials -->
             <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
                 <div class="p-6">

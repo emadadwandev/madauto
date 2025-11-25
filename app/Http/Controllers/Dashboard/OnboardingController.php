@@ -37,20 +37,34 @@ class OnboardingController extends Controller
         }
 
         $loyverseCredential = $this->apiCredentialRepository->getByService('loyverse');
-        $careemCredential = $this->apiCredentialRepository->getByService('careem');
+        $careemWebhookCredential = $this->apiCredentialRepository->getByService('careem');
+        $careemCatalogCredential = $this->apiCredentialRepository->getByService('careem_catalog');
+        $talabatCredential = $this->apiCredentialRepository->getByService('talabat');
 
         $onboardingStatus = [
             'account_configured' => $tenant->getSetting('currency') && $tenant->getSetting('timezone'),
             'location_created' => $tenant->locations()->exists(),
             'loyverse_connected' => $loyverseCredential && $loyverseCredential->is_active,
-            'careem_configured' => $careemCredential && $careemCredential->is_active,
+            'careem_webhook_configured' => $careemWebhookCredential && $careemWebhookCredential->is_active,
+            'platform_apis_configured' =>
+                ($careemCatalogCredential && $careemCatalogCredential->is_active) ||
+                ($talabatCredential && $talabatCredential->is_active),
         ];
 
         // Pass additional data for forms
         $currencies = supportedCurrencies();
         $timezones = supportedTimezones();
 
-        return view('dashboard.onboarding.index', compact('onboardingStatus', 'loyverseCredential', 'careemCredential', 'currencies', 'timezones', 'tenant'));
+        return view('dashboard.onboarding.index', compact(
+            'onboardingStatus',
+            'loyverseCredential',
+            'careemWebhookCredential',
+            'careemCatalogCredential',
+            'talabatCredential',
+            'currencies',
+            'timezones',
+            'tenant'
+        ));
     }
 
     /**
@@ -100,6 +114,9 @@ class OnboardingController extends Controller
             'email' => 'nullable|email|max:255',
             'platforms' => 'required|array|min:1',
             'platforms.*' => 'in:careem,talabat',
+            'loyverse_store_id' => 'nullable|string|max:255',
+            'careem_store_id' => 'nullable|string|max:255',
+            'talabat_vendor_id' => 'nullable|string|max:255',
         ]);
 
         try {
@@ -117,6 +134,9 @@ class OnboardingController extends Controller
                 'phone' => $request->phone,
                 'email' => $request->email,
                 'platforms' => $request->platforms,
+                'loyverse_store_id' => $request->loyverse_store_id,
+                'careem_store_id' => $request->careem_store_id,
+                'talabat_vendor_id' => $request->talabat_vendor_id,
                 'is_active' => true,
             ]);
 
@@ -193,6 +213,72 @@ class OnboardingController extends Controller
             ]);
 
             return back()->with('error', 'Failed to generate webhook secret. Please try again.');
+        }
+    }
+
+    /**
+     * Save Careem Catalog API credentials.
+     */
+    public function saveCareemCatalogCredentials(Request $request)
+    {
+        $request->validate([
+            'client_id' => 'required|string',
+            'client_secret' => 'required|string',
+        ]);
+
+        try {
+            // Save the credentials
+            $this->apiCredentialRepository->createOrUpdate('careem_catalog', [
+                'client_id' => $request->client_id,
+                'client_secret' => $request->client_secret,
+                'api_url' => $request->api_url ?? config('platforms.careem.api_url'),
+                'is_active' => true,
+            ]);
+
+            return redirect()
+                ->route('dashboard.onboarding.index', ['subdomain' => request()->route('subdomain')])
+                ->with('success', 'Careem Catalog API credentials saved successfully!');
+
+        } catch (\Exception $e) {
+            Log::error('Careem Catalog API credential save failed during onboarding', [
+                'error' => $e->getMessage(),
+            ]);
+
+            return back()->withInput()->with('error', 'Failed to save Careem credentials. Please try again.');
+        }
+    }
+
+    /**
+     * Save Talabat API credentials.
+     */
+    public function saveTalabatCredentials(Request $request)
+    {
+        $request->validate([
+            'client_id' => 'required|string',
+            'client_secret' => 'required|string',
+            'chain_code' => 'required|string',
+        ]);
+
+        try {
+            // Save the credentials
+            $this->apiCredentialRepository->createOrUpdate('talabat', [
+                'client_id' => $request->client_id,
+                'client_secret' => $request->client_secret,
+                'chain_code' => $request->chain_code,
+                'api_url' => $request->api_url ?? config('platforms.talabat.api_url'),
+                'is_active' => true,
+            ]);
+
+            return redirect()
+                ->route('dashboard.onboarding.index', ['subdomain' => request()->route('subdomain')])
+                ->with('success', 'Talabat API credentials saved successfully!');
+
+        } catch (\Exception $e) {
+            Log::error('Talabat API credential save failed during onboarding', [
+                'error' => $e->getMessage(),
+            ]);
+
+            return back()->withInput()->with('error', 'Failed to save Talabat credentials. Please try again.');
         }
     }
 

@@ -952,3 +952,4 @@ php artisan test --parallel  # Parallel execution
 **Original Integration:** Feature-complete and production-ready (single-tenant)
 **SaaS Transformation:** In Progress - 8-week timeline (see SAAS-TASKS.md)
 - always check the context befoer exexuting any prompt and if the context is not enough run /Compact
+- add the app status to the memeory file

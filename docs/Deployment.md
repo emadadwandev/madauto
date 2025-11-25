@@ -1,4 +1,4 @@
-# Deployment Guide - Careem Now to Loyverse POS Integration
+# Deployment Guide - madauto Now to Loyverse POS Integration
 
 ## Table of Contents
 1. [Server Requirements](#server-requirements)
@@ -59,7 +59,7 @@ php8.2-redis
 - [ ] Database server accessible
 - [ ] Redis server accessible
 - [ ] Loyverse API credentials obtained
-- [ ] Careem webhook secret obtained
+- [ ] madauto webhook secret obtained
 - [ ] Server firewall configured
 - [ ] SSH access configured
 - [ ] Backup solution planned
@@ -84,8 +84,8 @@ sudo apt update
 
 # Install PHP and extensions
 sudo apt install php8.2 php8.2-fpm php8.2-cli php8.2-mysql php8.2-mbstring \
-php8.2-xml php8.2-bcmath php8.2-curl php8.2-zip php8.2-gd php8.2-intl \
-php8.2-redis -y
+sudo apt install php8.2-xml php8.2-bcmath php8.2-curl php8.2-zip php8.2-gd php8.2-intl \
+sudo apt install php8.2-redis -y
 
 # Verify installation
 php -v
@@ -105,9 +105,9 @@ sudo mysql -u root -p
 ```
 
 ```sql
-CREATE DATABASE careem_loyverse CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-CREATE USER 'careem_user'@'localhost' IDENTIFIED BY 'strong_password_here';
-GRANT ALL PRIVILEGES ON careem_loyverse.* TO 'careem_user'@'localhost';
+  CREATE DATABASE madauto CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+  CREATE USER 'madauto_user'@'localhost' IDENTIFIED BY 'Em@d@123@12';
+  GRANT ALL PRIVILEGES ON madauto.* TO 'madauto_user'@'localhost';
 FLUSH PRIVILEGES;
 EXIT;
 ```
@@ -184,28 +184,28 @@ sudo systemctl start supervisor
 
 ```bash
 # Create web root directory
-sudo mkdir -p /var/www/careem-loyverse
-sudo chown -R $USER:www-data /var/www/careem-loyverse
+  sudo mkdir -p /var/www/madauto
+  sudo chown -R $USER:www-data /var/www/madauto
 ```
 
 ### 2. Clone/Upload Application
 
 **Option A: Using Git (Recommended)**
 ```bash
-cd /var/www/careem-loyverse
+  cd /var/www/madauto
 git clone <repository-url> .
 ```
 
 **Option B: Using FTP/SCP**
 ```bash
 # Upload files via SCP
-scp -r /local/path/* user@server:/var/www/careem-loyverse/
+  scp -r /local/path/* user@server:/var/www/madauto/
 ```
 
 ### 3. Install Dependencies
 
 ```bash
-cd /var/www/careem-loyverse
+  cd /var/www/madauto
 
 # Install PHP dependencies
 composer install --optimize-autoloader --no-dev
@@ -221,21 +221,21 @@ npm run build
 
 ```bash
 # Set proper ownership
-sudo chown -R www-data:www-data /var/www/careem-loyverse
+  sudo chown -R www-data:www-data /var/www/madauto
 
 # Set directory permissions
-sudo find /var/www/careem-loyverse -type d -exec chmod 755 {} \;
-sudo find /var/www/careem-loyverse -type f -exec chmod 644 {} \;
+  sudo find /var/www/madauto -type d -exec chmod 755 {} \;
+  sudo find /var/www/madauto -type f -exec chmod 644 {} \;
 
 # Set storage and cache permissions
-sudo chmod -R 775 /var/www/careem-loyverse/storage
-sudo chmod -R 775 /var/www/careem-loyverse/bootstrap/cache
+  sudo chmod -R 775 /var/www/madauto/storage
+  sudo chmod -R 775 /var/www/madauto/bootstrap/cache
 ```
 
 ### 5. Configure Nginx
 
 ```bash
-sudo nano /etc/nginx/sites-available/careem-loyverse
+  sudo nano /etc/nginx/sites-available/madauto
 ```
 
 **Nginx Configuration:**
@@ -243,7 +243,7 @@ sudo nano /etc/nginx/sites-available/careem-loyverse
 server {
     listen 80;
     server_name your-domain.com;
-    root /var/www/careem-loyverse/public;
+  root /var/www/madauto/public;
 
     add_header X-Frame-Options "SAMEORIGIN";
     add_header X-Content-Type-Options "nosniff";
@@ -280,7 +280,7 @@ server {
 
 **Enable the site:**
 ```bash
-sudo ln -s /etc/nginx/sites-available/careem-loyverse /etc/nginx/sites-enabled/
+  sudo ln -s /etc/nginx/sites-available/madauto /etc/nginx/sites-enabled/
 sudo nginx -t
 sudo systemctl reload nginx
 ```
@@ -293,7 +293,7 @@ sudo systemctl reload nginx
 ### 1. Create Environment File
 
 ```bash
-cd /var/www/careem-loyverse
+  cd /var/www/madauto
 cp .env.example .env
 nano .env
 ```
@@ -301,7 +301,7 @@ nano .env
 ### 2. Configure Environment Variables
 
 ```env
-APP_NAME="Careem-Loyverse Integration"
+APP_NAME="madauto-Loyverse Integration"
 APP_ENV=production
 APP_KEY=
 APP_DEBUG=false
@@ -314,11 +314,11 @@ LOG_LEVEL=error
 DB_CONNECTION=mysql
 DB_HOST=127.0.0.1
 DB_PORT=3306
-DB_DATABASE=careem_loyverse
-DB_USERNAME=careem_user
-DB_PASSWORD=your_database_password
+DB_DATABASE=madauto
+DB_USERNAME=madauto_user
+DB_PASSWORD=Em@d@123@12
 
-BROADCAST_DRIVER=redis
+#BROADCAST_DRIVER=redis
 CACHE_DRIVER=redis
 FILESYSTEM_DISK=local
 QUEUE_CONNECTION=redis
@@ -334,9 +334,9 @@ LOYVERSE_API_URL=https://api.loyverse.com/v1
 LOYVERSE_API_KEY=your_loyverse_api_key
 LOYVERSE_STORE_ID=your_store_id
 
-# Careem Configuration
-CAREEM_WEBHOOK_SECRET=your_webhook_secret
-CAREEM_WEBHOOK_URL=https://your-domain.com/api/webhook/careem
+# madauto Configuration
+MADAUTO_WEBHOOK_SECRET=your_webhook_secret
+MADAUTO_WEBHOOK_URL=https://your-domain.com/api/webhook/madauto
 
 # Queue Configuration
 QUEUE_CONNECTION=redis
@@ -372,13 +372,13 @@ php artisan view:cache
 ### 1. Run Migrations
 
 ```bash
-cd /var/www/careem-loyverse
+cd /var/www/madauto
 php artisan migrate --force
 ```
 
 ### 2. Seed Database (if needed)
 
-```bash
+```bashnan
 php artisan db:seed --force
 ```
 
@@ -389,14 +389,14 @@ php artisan db:seed --force
 ### 1. Create Supervisor Configuration
 
 ```bash
-sudo nano /etc/supervisor/conf.d/careem-loyverse-worker.conf
+  sudo nano /etc/supervisor/conf.d/madauto-worker.conf
 ```
 
 **Supervisor Configuration:**
 ```ini
-[program:careem-loyverse-worker]
+[program:madauto-worker]
 process_name=%(program_name)s_%(process_num)02d
-command=php /var/www/careem-loyverse/artisan queue:work redis --sleep=3 --tries=3 --max-time=3600 --timeout=300
+command=php /var/www/madauto/artisan queue:work redis --sleep=3 --tries=3 --max-time=3600 --timeout=300
 autostart=true
 autorestart=true
 stopasgroup=true
@@ -404,7 +404,7 @@ killasgroup=true
 user=www-data
 numprocs=4
 redirect_stderr=true
-stdout_logfile=/var/www/careem-loyverse/storage/logs/worker.log
+stdout_logfile=/var/www/madauto/storage/logs/worker.log
 stopwaitsecs=3600
 ```
 
@@ -413,7 +413,7 @@ stopwaitsecs=3600
 ```bash
 sudo supervisorctl reread
 sudo supervisorctl update
-sudo supervisorctl start careem-loyverse-worker:*
+  sudo supervisorctl start madauto-worker:*
 ```
 
 ### 3. Verify Workers are Running
@@ -429,7 +429,7 @@ sudo supervisorctl status
 ### 1. Install Laravel Echo Server
 
 ```bash
-cd /var/www/careem-loyverse
+  cd /var/www/madauto
 npm install -g laravel-echo-server
 ```
 
@@ -479,12 +479,12 @@ laravel-echo-server init
 ### 3. Create Supervisor Configuration for Echo Server
 
 ```bash
-sudo nano /etc/supervisor/conf.d/careem-loyverse-echo.conf
+  sudo nano /etc/supervisor/conf.d/madauto-echo.conf
 ```
 
 ```ini
-[program:careem-loyverse-echo]
-directory=/var/www/careem-loyverse
+[program:madauto-echo]
+directory=/var/www/madauto
 process_name=%(program_name)s_%(process_num)02d
 command=laravel-echo-server start
 autostart=true
@@ -492,7 +492,7 @@ autorestart=true
 user=www-data
 numprocs=1
 redirect_stderr=true
-stdout_logfile=/var/www/careem-loyverse/storage/logs/echo.log
+stdout_logfile=/var/www/madauto/storage/logs/echo.log
 ```
 
 ### 4. Start Echo Server
@@ -500,7 +500,7 @@ stdout_logfile=/var/www/careem-loyverse/storage/logs/echo.log
 ```bash
 sudo supervisorctl reread
 sudo supervisorctl update
-sudo supervisorctl start careem-loyverse-echo:*
+  sudo supervisorctl start madauto-echo:*
 ```
 
 ---
@@ -525,7 +525,7 @@ sudo certbot renew --dry-run
 Certbot will automatically update your Nginx configuration. Verify:
 
 ```bash
-sudo nano /etc/nginx/sites-available/careem-loyverse
+  sudo nano /etc/nginx/sites-available/madauto
 ```
 
 ---
@@ -539,7 +539,7 @@ sudo nano /etc/nginx/sites-available/careem-loyverse
 curl https://your-domain.com
 
 # Test webhook endpoint
-curl -X POST https://your-domain.com/api/webhook/careem \
+curl -X POST https://your-domain.com/api/webhook/madauto \
   -H "Content-Type: application/json" \
   -d '{"test": "data"}'
 ```
@@ -548,19 +548,19 @@ curl -X POST https://your-domain.com/api/webhook/careem \
 
 ```bash
 # Application logs
-tail -f /var/www/careem-loyverse/storage/logs/laravel.log
+  tail -f /var/www/madauto/storage/logs/laravel.log
 
 # Nginx logs
 tail -f /var/log/nginx/error.log
 
 # Queue worker logs
-tail -f /var/www/careem-loyverse/storage/logs/worker.log
+  tail -f /var/www/madauto/storage/logs/worker.log
 ```
 
 ### 3. Verify Queue Workers
 
 ```bash
-sudo supervisorctl status careem-loyverse-worker:*
+  sudo supervisorctl status madauto-worker:*
 ```
 
 ### 4. Verify Database Connection
@@ -593,11 +593,11 @@ php artisan migrate
 ### 2. Setup Log Rotation
 
 ```bash
-sudo nano /etc/logrotate.d/careem-loyverse
+  sudo nano /etc/logrotate.d/madauto
 ```
 
 ```
-/var/www/careem-loyverse/storage/logs/*.log {
+/var/www/madauto/storage/logs/*.log {
     daily
     missingok
     rotate 14
@@ -624,15 +624,15 @@ curl https://your-domain.com/api/health
 ### 1. Database Backup Script
 
 ```bash
-sudo nano /usr/local/bin/backup-careem-db.sh
+sudo nano /usr/local/bin/backup-madauto-db.sh
 ```
 
 ```bash
 #!/bin/bash
-BACKUP_DIR="/var/backups/careem-loyverse"
+BACKUP_DIR="/var/backups/madauto"
 DATE=$(date +%Y%m%d_%H%M%S)
-DB_NAME="careem_loyverse"
-DB_USER="careem_user"
+DB_NAME="madauto"
+DB_USER="madauto_user"
 DB_PASS="your_password"
 
 mkdir -p $BACKUP_DIR
@@ -646,7 +646,7 @@ echo "Backup completed: $BACKUP_DIR/db_backup_$DATE.sql.gz"
 ```
 
 ```bash
-sudo chmod +x /usr/local/bin/backup-careem-db.sh
+sudo chmod +x /usr/local/bin/backup-madauto-db.sh
 ```
 
 ### 2. Setup Cron for Automated Backups
@@ -658,17 +658,17 @@ sudo crontab -e
 Add:
 ```
 # Daily database backup at 2 AM
-0 2 * * * /usr/local/bin/backup-careem-db.sh >> /var/log/careem-backup.log 2>&1
+0 2 * * * /usr/local/bin/backup-madauto-db.sh >> /var/log/madauto-backup.log 2>&1
 ```
 
 ### 3. Application Files Backup
 
 ```bash
 # Manual backup
-tar -czf /var/backups/careem-loyverse/app_backup_$(date +%Y%m%d).tar.gz \
-  /var/www/careem-loyverse \
-  --exclude='/var/www/careem-loyverse/storage/logs' \
-  --exclude='/var/www/careem-loyverse/vendor'
+tar -czf /var/backups/madauto/app_backup_$(date +%Y%m%d).tar.gz \
+  /var/www/madauto \
+  --exclude='/var/www/madauto/storage/logs' \
+  --exclude='/var/www/madauto/vendor'
 ```
 
 ---
@@ -682,10 +682,10 @@ tar -czf /var/backups/careem-loyverse/app_backup_$(date +%Y%m%d).tar.gz \
 sudo supervisorctl status
 
 # Restart workers
-sudo supervisorctl restart careem-loyverse-worker:*
+  sudo supervisorctl restart madauto-worker:*
 
 # Check worker logs
-tail -f /var/www/careem-loyverse/storage/logs/worker.log
+  tail -f /var/www/madauto/storage/logs/worker.log
 ```
 
 ### Webhook Not Receiving Data
@@ -698,7 +698,7 @@ sudo tail -f /var/log/nginx/error.log
 php artisan route:list | grep webhook
 
 # Test webhook locally
-curl -X POST http://localhost/api/webhook/careem \
+curl -X POST http://localhost/api/webhook/madauto \
   -H "Content-Type: application/json" \
   -d '{"order_id": "test123"}'
 ```
@@ -707,7 +707,7 @@ curl -X POST http://localhost/api/webhook/careem \
 
 ```bash
 # Test MySQL connection
-mysql -u careem_user -p careem_loyverse
+mysql -u madauto_user -p madauto
 
 # Check Laravel database config
 php artisan tinker
@@ -718,19 +718,19 @@ php artisan tinker
 
 ```bash
 # Reset permissions
-sudo chown -R www-data:www-data /var/www/careem-loyverse
-sudo chmod -R 775 /var/www/careem-loyverse/storage
-sudo chmod -R 775 /var/www/careem-loyverse/bootstrap/cache
+  sudo chown -R www-data:www-data /var/www/madauto
+  sudo chmod -R 775 /var/www/madauto/storage
+  sudo chmod -R 775 /var/www/madauto/bootstrap/cache
 ```
 
 ### Laravel Echo Server Not Working
 
 ```bash
 # Check Echo Server status
-sudo supervisorctl status careem-loyverse-echo:*
+  sudo supervisorctl status madauto-echo:*
 
 # Check Echo Server logs
-tail -f /var/www/careem-loyverse/storage/logs/echo.log
+  tail -f /var/www/madauto/storage/logs/echo.log
 
 # Test Echo Server
 curl http://localhost:6001
@@ -802,7 +802,7 @@ php artisan queue:restart
 ### 1. Pull Latest Code
 
 ```bash
-cd /var/www/careem-loyverse
+  cd /var/www/madauto
 git pull origin main
 ```
 
@@ -833,8 +833,8 @@ php artisan view:cache
 ### 5. Restart Services
 
 ```bash
-sudo supervisorctl restart careem-loyverse-worker:*
-sudo supervisorctl restart careem-loyverse-echo:*
+  sudo supervisorctl restart madauto-worker:*
+  sudo supervisorctl restart madauto-echo:*
 sudo systemctl reload php8.2-fpm
 ```
 
@@ -886,4 +886,4 @@ For deployment issues or questions, refer to:
 
 ---
 
-**Deployment Complete!** Your Careem Now to Loyverse POS integration service should now be running.
+**Deployment Complete!** Your madauto Now to Loyverse POS integration service should now be running.

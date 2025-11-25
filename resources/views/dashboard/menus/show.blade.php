@@ -125,6 +125,87 @@
                 </div>
             </div>
 
+            <!-- Platform Sync Status -->
+            @if($menu->isPublished() && count($menu->platforms()) > 0)
+            <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg mb-6">
+                <div class="p-6">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4">Platform Sync Status</h3>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        @foreach($menu->platforms() as $platform)
+                            @php
+                                $sync = $platformSyncs->get($platform);
+                                $status = $sync->sync_status ?? 'pending';
+                                $lastSynced = $sync->last_synced_at ?? null;
+                                $error = $sync->sync_error ?? null;
+
+                                $statusColors = [
+                                    'pending' => 'bg-gray-100 text-gray-800',
+                                    'syncing' => 'bg-blue-100 text-blue-800',
+                                    'synced' => 'bg-green-100 text-green-800',
+                                    'failed' => 'bg-red-100 text-red-800',
+                                ];
+
+                                $statusIcons = [
+                                    'pending' => 'M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z',
+                                    'syncing' => 'M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15',
+                                    'synced' => 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z',
+                                    'failed' => 'M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z',
+                                ];
+                            @endphp
+
+                            <div class="border border-gray-200 rounded-lg p-4">
+                                <div class="flex items-center justify-between mb-2">
+                                    <h4 class="text-base font-medium text-gray-900">{{ ucfirst($platform) }}</h4>
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {{ $statusColors[$status] ?? 'bg-gray-100 text-gray-800' }}">
+                                        <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="{{ $statusIcons[$status] ?? $statusIcons['pending'] }}" />
+                                        </svg>
+                                        {{ ucfirst($status) }}
+                                    </span>
+                                </div>
+
+                                @if($lastSynced)
+                                    <p class="text-xs text-gray-500">
+                                        Last synced: {{ \Carbon\Carbon::parse($lastSynced)->diffForHumans() }}
+                                    </p>
+                                @endif
+
+                                @if($status === 'syncing')
+                                    <p class="text-xs text-blue-600 mt-1">
+                                        <span class="animate-pulse">●</span> Syncing menu to platform...
+                                    </p>
+                                @endif
+
+                                @if($status === 'failed' && $error)
+                                    <div class="mt-2 p-2 bg-red-50 rounded text-xs text-red-700">
+                                        <strong>Error:</strong> {{ Str::limit($error, 100) }}
+                                    </div>
+                                @endif
+
+                                @if($status === 'pending')
+                                    <p class="text-xs text-gray-500 mt-1">
+                                        Waiting to sync. Check queue worker is running.
+                                    </p>
+                                @endif
+                            </div>
+                        @endforeach
+                    </div>
+
+                    @if($platformSyncs->where('sync_status', 'syncing')->count() > 0)
+                        <div class="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                            <p class="text-sm text-blue-800">
+                                <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                                Menu sync in progress. This page will auto-refresh when complete. You can also check sync logs in the dashboard.
+                            </p>
+                        </div>
+                    @endif
+                </div>
+            </div>
+            @endif
+
             <!-- Menu Items -->
             <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
                 <div class="p-6">
@@ -169,7 +250,7 @@
                                                         @endif
                                                     </div>
                                                     <div class="text-right">
-                                                        <div class="text-sm font-semibold text-gray-900">AED {{ number_format($item->price, 2) }}</div>
+                                                        <div class="text-sm font-semibold text-gray-900">{{ formatCurrency($item->price) }}</div>
                                                         @if($item->tax_rate > 0)
                                                             <div class="text-xs text-gray-500">+{{ $item->tax_rate }}% tax</div>
                                                         @endif

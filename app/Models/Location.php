@@ -31,6 +31,9 @@ class Location extends Model
         'is_busy',
         'is_active',
         'loyverse_store_id',
+        'careem_store_id',
+        'talabat_vendor_id',
+        'platform_sync_status',
         'metadata',
     ];
 
@@ -44,6 +47,7 @@ class Location extends Model
         'opening_hours' => 'array',
         'is_busy' => 'boolean',
         'is_active' => 'boolean',
+        'platform_sync_status' => 'array',
         'metadata' => 'array',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',

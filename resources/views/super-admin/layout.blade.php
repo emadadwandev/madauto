@@ -8,7 +8,7 @@
         <title>{{ config('app.name', 'Laravel') }} - Super Admin</title>
 
         <!-- Favicon -->
-        <link rel="icon" type="image/png" href="{{ asset('images/Madlogo.png') }}">
+        <link rel="icon" type="image/png" href="{{ asset('images/main_logo.png') }}">
 
         <!-- Fonts -->
         <link rel="preconnect" href="https://fonts.bunny.net">

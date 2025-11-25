@@ -119,8 +119,13 @@
                         <td class="px-6 py-4 whitespace-nowrap">
                             <div class="flex items-center">
                                 <div>
-                                    <div class="text-sm font-medium text-gray-900">{{ $subscription->tenant->name }}</div>
-                                    <div class="text-sm text-gray-500">{{ $subscription->tenant->subdomain }}</div>
+                                    @if($subscription->tenant)
+                                        <div class="text-sm font-medium text-gray-900">{{ $subscription->tenant->name }}</div>
+                                        <div class="text-sm text-gray-500">{{ $subscription->tenant->subdomain }}</div>
+                                    @else
+                                        <div class="text-sm font-medium text-red-600">Tenant Deleted</div>
+                                        <div class="text-sm text-gray-500">ID: {{ $subscription->tenant_id }}</div>
+                                    @endif
                                 </div>
                             </div>
                         </td>

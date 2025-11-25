@@ -94,7 +94,7 @@
                                     >
                                         {{ $item['name'] }}
                                         @if($item['sku']) | SKU: {{ $item['sku'] }} @endif
-                                        @if($item['price']) | {{ number_format($item['price'], 2) }} @endif
+                                        @if($item['price']) | {{ formatCurrency($item['price']) }} @endif
                                         @if($item['category']) | {{ $item['category'] }} @endif
                                     </option>
                                 @endforeach

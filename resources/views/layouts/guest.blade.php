@@ -6,8 +6,8 @@
         <meta name="csrf-token" content="{{ csrf_token() }}">
 
     <title>{{ config('app.name', 'Laravel') }}</title>
-    <!-- Favicon: use Madlogo.png placed in public/images -->
-    <link rel="icon" href="{{ asset('images/Madlogo.png') }}" type="image/png">
+    <!-- Favicon: use main_logo.png placed in public/images -->
+    <link rel="icon" href="{{ asset('images/main_logo.png') }}" type="image/png">
 
         <!-- Fonts -->
         <link rel="preconnect" href="https://fonts.bunny.net">

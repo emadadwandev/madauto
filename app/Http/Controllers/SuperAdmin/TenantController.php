@@ -12,6 +12,8 @@ use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\DB;
+use App\Mail\WelcomeTenantEmail;
+use Illuminate\Support\Facades\Mail;
 
 class TenantController extends Controller
 {
@@ -152,6 +154,13 @@ class TenantController extends Controller
             ]);
 
             DB::commit();
+
+            // Send welcome email
+            try {
+                Mail::to($user->email)->send(new WelcomeTenantEmail($tenant, $user, $validated['password']));
+            } catch (\Exception $e) {
+                \Log::error('Failed to send welcome email', ['error' => $e->getMessage()]);
+            }
 
             return redirect()
                 ->route('super-admin.tenants.show', $tenant)

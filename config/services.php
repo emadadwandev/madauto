@@ -1,7 +1,6 @@
 <?php
 
 return [
-
     /*
     |--------------------------------------------------------------------------
     | Third Party Services
@@ -16,6 +15,10 @@ return [
 
     'postmark' => [
         'token' => env('POSTMARK_TOKEN'),
+    ],
+
+    'brevo' => [
+        'key' => env('BREVO_KEY'),
     ],
 
     'resend' => [
@@ -55,5 +58,4 @@ return [
         'apiKey' => env('MAILTRAP_API_KEY'),
         'inboxId' => env('MAILTRAP_INBOX_ID'),
     ],
-
 ];

@@ -144,9 +144,15 @@ class MenuController extends Controller
      */
     public function show(string $subdomain, Menu $menu)
     {
-        $menu->load(['items.modifierGroups.modifiers', 'locations', 'platformSyncs']);
+        $menu->load(['items.modifierGroups.modifiers', 'locations']);
 
-        return view('dashboard.menus.show', compact('menu'));
+        // Get platform sync status
+        $platformSyncs = DB::table('menu_platform')
+            ->where('menu_id', $menu->id)
+            ->get()
+            ->keyBy('platform');
+
+        return view('dashboard.menus.show', compact('menu', 'platformSyncs'));
     }
 
     /**
@@ -307,7 +313,8 @@ class MenuController extends Controller
         }
 
         // Validate menu has platforms
-        if (empty($menu->platforms())) {
+        $platforms = $menu->platforms();
+        if (empty($platforms)) {
             return back()->with('error', 'Cannot publish menu. Please assign at least one platform.');
         }
 
@@ -316,9 +323,51 @@ class MenuController extends Controller
             return back()->with('error', 'Cannot publish menu. Please assign at least one location.');
         }
 
-        $menu->publish();
+        DB::beginTransaction();
 
-        return back()->with('success', 'Menu published successfully!');
+        try {
+            // Mark menu as published
+            $menu->publish();
+
+            // Get tenant ID (cast to int for type safety)
+            $tenantId = (int) $menu->tenant_id;
+
+            // Dispatch sync jobs for each platform
+            foreach ($platforms as $platform) {
+                if (config("platforms.{$platform}.enabled", true)) {
+                    \App\Jobs\SyncMenuToPlatformJob::dispatch($menu, $platform, $tenantId);
+
+                    Log::info("Menu sync job dispatched for {$platform}", [
+                        'menu_id' => $menu->id,
+                        'menu_name' => $menu->name,
+                        'platform' => $platform,
+                    ]);
+                }
+            }
+
+            DB::commit();
+
+            // Log activity
+            \App\Services\UserActivityService::log('menu.published', null, [
+                'menu_id' => $menu->id,
+                'menu_name' => $menu->name,
+                'platforms' => $platforms,
+            ]);
+
+            $platformList = implode(', ', array_map('ucfirst', $platforms));
+
+            return back()->with('success', "Menu published successfully! Syncing to platforms: {$platformList}. This may take a few minutes.");
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+
+            Log::error('Failed to publish menu', [
+                'menu_id' => $menu->id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return back()->with('error', 'Failed to publish menu: ' . $e->getMessage());
+        }
     }
 
     /**

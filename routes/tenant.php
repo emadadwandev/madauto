@@ -291,6 +291,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::delete('/{location}', [LocationController::class, 'destroy'])->name('destroy');
         Route::patch('/{location}/toggle', [LocationController::class, 'toggle'])->name('toggle');
         Route::patch('/{location}/toggle-busy', [LocationController::class, 'toggleBusy'])->name('toggle-busy');
+
+        // Platform sync routes
+        Route::post('/{location}/sync-status', [LocationController::class, 'syncStatus'])->name('sync-status');
+        Route::post('/{location}/sync-hours', [LocationController::class, 'syncHours'])->name('sync-hours');
     });
 
     // Product Mappings
@@ -298,10 +302,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/', [ProductMappingController::class, 'index'])->name('index');
         Route::get('/create', [ProductMappingController::class, 'create'])->name('create');
         Route::post('/', [ProductMappingController::class, 'store'])->name('store');
-        Route::get('/{productMapping}/edit', [ProductMappingController::class, 'edit'])->name('edit');
-        Route::put('/{productMapping}', [ProductMappingController::class, 'update'])->name('update');
-        Route::delete('/{productMapping}', [ProductMappingController::class, 'destroy'])->name('destroy');
-        Route::post('/{productMapping}/toggle', [ProductMappingController::class, 'toggle'])->name('toggle');
+        Route::get('/{id}/edit', [ProductMappingController::class, 'edit'])->name('edit');
+        Route::put('/{id}', [ProductMappingController::class, 'update'])->name('update');
+        // Use {id} instead of {productMapping} to bypass implicit route model binding which causes 404s with global scopes
+        Route::delete('/{id}', [ProductMappingController::class, 'destroy'])->name('destroy');
+        Route::post('/{id}/toggle', [ProductMappingController::class, 'toggle'])->name('toggle');
         Route::post('/auto-map', [ProductMappingController::class, 'autoMap'])->name('auto-map');
         Route::post('/import', [ProductMappingController::class, 'import'])->name('import');
         Route::get('/export', [ProductMappingController::class, 'export'])->name('export');
@@ -321,6 +326,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/', [ApiCredentialController::class, 'index'])->name('index');
         Route::post('/', [ApiCredentialController::class, 'store'])->name('store');
         Route::post('/test-connection', [ApiCredentialController::class, 'testConnection'])->name('test-connection');
+
+        // Platform Catalog API credentials
+        Route::post('/careem-catalog', [ApiCredentialController::class, 'storeCareemCatalog'])->name('careem-catalog.store');
+        Route::post('/careem-catalog/test', [ApiCredentialController::class, 'testCareemConnection'])->name('careem-catalog.test');
+        Route::post('/talabat-catalog', [ApiCredentialController::class, 'storeTalabatCatalog'])->name('talabat-catalog.store');
+        Route::post('/talabat-catalog/test', [ApiCredentialController::class, 'testTalabatConnection'])->name('talabat-catalog.test');
+
         Route::post('/{apiCredential}/toggle', [ApiCredentialController::class, 'toggle'])->name('toggle');
         Route::delete('/{apiCredential}', [ApiCredentialController::class, 'destroy'])->name('destroy');
     });
@@ -354,6 +366,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('/location/save', [OnboardingController::class, 'saveLocation'])->name('location.save');
         Route::post('/loyverse/save', [OnboardingController::class, 'saveLoyverseToken'])->name('loyverse.save');
         Route::post('/webhook/generate', [OnboardingController::class, 'generateWebhookSecret'])->name('webhook.generate');
+        Route::post('/careem-catalog/save', [OnboardingController::class, 'saveCareemCatalogCredentials'])->name('careem-catalog.save');
+        Route::post('/talabat/save', [OnboardingController::class, 'saveTalabatCredentials'])->name('talabat.save');
         Route::post('/complete', [OnboardingController::class, 'complete'])->name('complete');
         Route::get('/skip', [OnboardingController::class, 'skip'])->name('skip');
     });
@@ -392,8 +406,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::put('/{menu}', [MenuController::class, 'update'])->name('update');
         Route::delete('/{menu}', [MenuController::class, 'destroy'])->name('destroy');
         Route::patch('/{menu}/toggle', [MenuController::class, 'toggle'])->name('toggle');
-        Route::patch('/{menu}/publish', [MenuController::class, 'publish'])->name('publish');
-        Route::patch('/{menu}/unpublish', [MenuController::class, 'unpublish'])->name('unpublish');
+        Route::post('/{menu}/publish', [MenuController::class, 'publish'])->name('publish');
+        Route::post('/{menu}/unpublish', [MenuController::class, 'unpublish'])->name('unpublish');
         Route::post('/{menu}/duplicate', [MenuController::class, 'duplicate'])->name('duplicate');
 
         // Menu Items
@@ -429,5 +443,19 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
 
-// Include authentication routes for tenant subdomains
+// Debug route to inspect DB directly
+Route::get('/debug-db/{id}', function ($subdomain, $id) {
+    $mapping = \App\Models\ProductMapping::withoutGlobalScopes()->find($id);
+    $tenant = app(\App\Services\TenantContext::class)->get();
+
+    return [
+        'id_requested' => $id,
+        'subdomain_param' => $subdomain,
+        'mapping_found' => $mapping ? 'YES' : 'NO',
+        'mapping_data' => $mapping,
+        'current_tenant' => $tenant,
+        'tenant_match' => ($mapping && $tenant && $mapping->tenant_id === $tenant->id) ? 'YES' : 'NO',
+        'all_mappings_count' => \App\Models\ProductMapping::withoutGlobalScopes()->count(),
+    ];
+});// Include authentication routes for tenant subdomains
 require __DIR__.'/auth.php';

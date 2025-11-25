@@ -258,7 +258,7 @@
                                                             @endif
                                                         </div>
                                                         <div class="text-right">
-                                                            <div class="text-sm font-semibold text-gray-900">AED {{ number_format($item->price, 2) }}</div>
+                                                            <div class="text-sm font-semibold text-gray-900">{{ formatCurrency($item->price) }}</div>
                                                             <div class="flex items-center gap-1 mt-1">
                                                                 <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs {{ $item->is_available ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800' }}">
                                                                     {{ $item->is_available ? 'Available' : 'Out of Stock' }}
@@ -359,7 +359,6 @@
                                 @if($menu->isDraft())
                                     <form action="{{ route('dashboard.menus.publish', ['menu' => $menu, 'subdomain' => request()->route('subdomain')]) }}" method="POST" class="w-full">
                                         @csrf
-                                        @method('PATCH')
                                         <button type="submit" class="w-full inline-flex justify-center items-center px-4 py-2 bg-green-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-green-700">
                                             <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
@@ -370,7 +369,6 @@
                                 @else
                                     <form action="{{ route('dashboard.menus.unpublish', ['menu' => $menu, 'subdomain' => request()->route('subdomain')]) }}" method="POST" class="w-full">
                                         @csrf
-                                        @method('PATCH')
                                         <button type="submit" class="w-full inline-flex justify-center items-center px-4 py-2 bg-yellow-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-yellow-700">
                                             Unpublish Menu
                                         </button>

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Dashboard;
 use App\Models\Location;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
+use App\Services\LocationPlatformSyncService;
 
 class LocationController extends Controller
 {
@@ -182,7 +183,7 @@ class LocationController extends Controller
     }
 
     /**
-     * Toggle location busy mode.
+     * Toggle location busy mode and sync to platforms
      */
     public function toggleBusy(string $subdomain, Location $location)
     {
@@ -190,15 +191,20 @@ class LocationController extends Controller
 
         $location->toggleBusyMode();
 
+        // Automatically sync to all connected platforms
+        $syncService = new LocationPlatformSyncService();
+        $results = $syncService->syncAllPlatforms($location);
+
         return response()->json([
             'success' => true,
             'is_busy' => $location->is_busy,
             'message' => $location->is_busy ? 'Location marked as busy' : 'Location marked as available',
+            'platform_sync_results' => $results,
         ]);
     }
 
     /**
-     * Toggle location active status.
+     * Toggle location active status and sync to platforms
      */
     public function toggle(string $subdomain, Location $location)
     {
@@ -207,11 +213,103 @@ class LocationController extends Controller
         $location->is_active = !$location->is_active;
         $location->save();
 
+        // Automatically sync to all connected platforms
+        $syncService = new LocationPlatformSyncService();
+        $results = $syncService->syncAllPlatforms($location);
+
         return response()->json([
             'success' => true,
             'is_active' => $location->is_active,
             'message' => $location->is_active ? 'Location activated' : 'Location deactivated',
+            'platform_sync_results' => $results,
         ]);
+    }
+
+    /**
+     * Sync location status to platforms
+     */
+    public function syncStatus(Request $request, string $subdomain, Location $location)
+    {
+        $this->authorizeLocation($location);
+
+        $validated = $request->validate([
+            'is_active' => 'nullable|boolean',
+            'is_busy' => 'nullable|boolean',
+            'platforms' => 'nullable|array',
+            'platforms.*' => 'in:careem,talabat',
+        ]);
+
+        $syncService = new LocationPlatformSyncService();
+        $results = [];
+
+        // Determine which platforms to sync
+        $platformsToSync = $validated['platforms'] ?? $location->platforms ?? [];
+
+        foreach ($platformsToSync as $platform) {
+            if ($platform === 'careem') {
+                $results['careem'] = $syncService->syncCareemStatus($location, $validated);
+            } elseif ($platform === 'talabat') {
+                $results['talabat'] = $syncService->syncTalabatStatus($location, $validated);
+            }
+        }
+
+        $allSuccess = collect($results)->every(fn($r) => $r['success']);
+
+        if ($allSuccess) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Location status synced to platforms successfully.',
+                'results' => $results,
+            ]);
+        }
+
+        return response()->json([
+            'success' => false,
+            'message' => 'Some platforms failed to sync. See details below.',
+            'results' => $results,
+        ], 422);
+    }
+
+    /**
+     * Sync location operating hours to platforms
+     */
+    public function syncHours(Request $request, string $subdomain, Location $location)
+    {
+        $this->authorizeLocation($location);
+
+        $validated = $request->validate([
+            'platforms' => 'nullable|array',
+            'platforms.*' => 'in:careem,talabat',
+        ]);
+
+        $syncService = new LocationPlatformSyncService();
+        $results = [];
+
+        // Determine which platforms to sync
+        $platformsToSync = $validated['platforms'] ?? $location->platforms ?? [];
+
+        foreach ($platformsToSync as $platform) {
+            if ($platform === 'careem') {
+                $results['careem'] = $syncService->syncCareemHours($location);
+            }
+            // Note: Talabat operating hours are managed differently via catalog API
+        }
+
+        $allSuccess = collect($results)->every(fn($r) => $r['success']);
+
+        if ($allSuccess) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Location hours synced to platforms successfully.',
+                'results' => $results,
+            ]);
+        }
+
+        return response()->json([
+            'success' => false,
+            'message' => 'Some platforms failed to sync. See details below.',
+            'results' => $results,
+        ], 422);
     }
 
     /**

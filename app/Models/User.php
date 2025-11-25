@@ -2,12 +2,13 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
+use App\Mail\ResetPasswordEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Facades\Mail;
 
 class User extends Authenticatable
 {
@@ -149,5 +150,26 @@ class User extends Authenticatable
     public function rolesForTenant($tenantId)
     {
         return $this->roles()->wherePivot('tenant_id', $tenantId)->get();
+    }
+
+    /**
+     * Send the password reset notification.
+     *
+     * @param  string  $token
+     * @return void
+     */
+    public function sendPasswordResetNotification($token)
+    {
+        $domain = config('app.domain', 'localhost');
+        $subdomain = $this->tenant ? $this->tenant->subdomain : 'admin';
+
+        // Construct the reset URL
+        // Assuming the route is named 'password.reset' and handles subdomain
+        // If using standard Laravel auth, it might be just /reset-password/{token}
+        // We need to ensure the URL points to the correct tenant subdomain
+
+        $url = "http://{$subdomain}.{$domain}/reset-password/{$token}?email={$this->email}";
+
+        Mail::to($this->email)->send(new ResetPasswordEmail($url));
     }
 }
