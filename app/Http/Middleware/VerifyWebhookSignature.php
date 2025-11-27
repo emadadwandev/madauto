@@ -36,6 +36,12 @@ class VerifyWebhookSignature
             abort(404, 'Tenant not found.');
         }
 
+        // Verify x-careem-api-key
+        $apiKey = $request->header('x-careem-api-key');
+        if (! $apiKey || $apiKey !== $tenantModel->careem_api_key) {
+            abort(401, 'Invalid or missing x-careem-api-key header.');
+        }
+
         // Set tenant context before getting credentials
         app()->instance('tenant', $tenantModel);
 

@@ -8,15 +8,26 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Str;
 use Laravel\Cashier\Billable;
 
 class Tenant extends Model
 {
     use Billable, HasFactory, HasUuids, SoftDeletes;
 
+    protected static function booted()
+    {
+        static::creating(function ($tenant) {
+            if (empty($tenant->careem_api_key)) {
+                $tenant->careem_api_key = 'ck_' . Str::random(32);
+            }
+        });
+    }
+
     protected $fillable = [
         'name',
         'subdomain',
+        'careem_api_key',
         'domain',
         'status',
         'settings',

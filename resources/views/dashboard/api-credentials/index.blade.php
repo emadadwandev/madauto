@@ -98,6 +98,19 @@
                         <p class="text-gray-600 text-xs italic mt-2">
                             <strong>Important:</strong> This URL is specific to your tenant. Each tenant has a unique webhook URL.
                         </p>
+
+                        <label class="block text-gray-700 text-sm font-bold mb-2 mt-4">
+                            x-careem-api-key (Provide this to Careem)
+                        </label>
+                        <div class="flex items-center bg-gray-100 p-3 rounded">
+                            <code class="flex-1 text-sm">{{ tenant()->careem_api_key }}</code>
+                            <button onclick="navigator.clipboard.writeText('{{ tenant()->careem_api_key }}')" class="ml-2 bg-gray-500 hover:bg-gray-700 text-white font-bold py-1 px-3 rounded text-sm">
+                                Copy
+                            </button>
+                        </div>
+                        <p class="text-gray-600 text-xs italic mt-2">
+                            <strong>Important:</strong> This key is required for Careem to authenticate with your webhook.
+                        </p>
                     </div>
                 </div>
             </div>
