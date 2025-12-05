@@ -26,7 +26,7 @@ class ApiCredentialController extends Controller
     {
         // Fetch all credentials for the current tenant
         $allCredentials = ApiCredential::all();
-        
+
         // Group by service and map to key-value pairs
         $credentials = $allCredentials->groupBy('service')->map(function ($items) {
             return $items->mapWithKeys(function ($item) {
