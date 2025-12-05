@@ -62,11 +62,18 @@ class CareemApiService
      */
     protected function loadTenantCredentials(int $tenantId): array
     {
-        $credential = \App\Models\ApiCredential::where('tenant_id', $tenantId)
+        $credentials = \App\Models\ApiCredential::withoutGlobalScope(\App\Models\Scopes\TenantScope::class)
+            ->where('tenant_id', $tenantId)
             ->where('service', 'careem_catalog')
-            ->first();
+            ->where('is_active', true)
+            ->get();
 
-        return $credential ? $credential->credentials : [];
+        $result = [];
+        foreach ($credentials as $cred) {
+            $result[$cred->credential_type] = $cred->credential_value;
+        }
+
+        return $result;
     }
 
     /**
@@ -78,13 +85,26 @@ class CareemApiService
 
         return Cache::remember($cacheKey, now()->addHours(1), function () {
             try {
+                // Careem requires multipart/form-data for token endpoint
                 $response = Http::timeout($this->timeout)
-                    ->asForm()
+                    ->asMultipart()
                     ->post($this->tokenUrl, [
-                        'grant_type' => 'client_credentials',
-                        'client_id' => $this->clientId,
-                        'client_secret' => $this->clientSecret,
-                        'scope' => $this->scope,
+                        [
+                            'name' => 'grant_type',
+                            'contents' => 'client_credentials'
+                        ],
+                        [
+                            'name' => 'client_id',
+                            'contents' => $this->clientId
+                        ],
+                        [
+                            'name' => 'client_secret',
+                            'contents' => $this->clientSecret
+                        ],
+                        [
+                            'name' => 'scope',
+                            'contents' => $this->scope
+                        ],
                     ]);
 
                 if (!$response->successful()) {

@@ -63,11 +63,18 @@ class TalabatApiService
      */
     protected function loadTenantCredentials(int $tenantId): array
     {
-        $credential = \App\Models\ApiCredential::where('tenant_id', $tenantId)
+        $credentials = \App\Models\ApiCredential::withoutGlobalScope(\App\Models\Scopes\TenantScope::class)
+            ->where('tenant_id', $tenantId)
             ->where('service', 'talabat')
-            ->first();
+            ->where('is_active', true)
+            ->get();
 
-        return $credential ? $credential->credentials : [];
+        $result = [];
+        foreach ($credentials as $cred) {
+            $result[$cred->credential_type] = $cred->credential_value;
+        }
+
+        return $result;
     }
 
     /**

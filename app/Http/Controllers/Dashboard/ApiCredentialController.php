@@ -24,7 +24,15 @@ class ApiCredentialController extends Controller
      */
     public function index(string $subdomain)
     {
-        $credentials = ApiCredential::orderBy('service')->get()->keyBy('service');
+        // Fetch all credentials for the current tenant
+        $allCredentials = ApiCredential::all();
+        
+        // Group by service and map to key-value pairs
+        $credentials = $allCredentials->groupBy('service')->map(function ($items) {
+            return $items->mapWithKeys(function ($item) {
+                return [$item->credential_type => $item->credential_value];
+            });
+        });
 
         return view('dashboard.api-credentials.index', compact('credentials'));
     }
@@ -66,20 +74,57 @@ class ApiCredentialController extends Controller
             'api_url' => 'nullable|url',
         ]);
 
+        // Save Client ID
         ApiCredential::updateOrCreate(
             [
                 'service' => 'careem_catalog',
+                'credential_type' => 'client_id',
             ],
             [
-                'credentials' => [
-                    'client_id' => $validated['client_id'],
-                    'client_secret' => $validated['client_secret'],
-                    'restaurant_id' => $validated['restaurant_id'] ?? null,
-                    'api_url' => $validated['api_url'] ?? config('platforms.careem.api_url'),
-                ],
+                'credential_value' => $validated['client_id'],
                 'is_active' => true,
             ]
         );
+
+        // Save Client Secret
+        ApiCredential::updateOrCreate(
+            [
+                'service' => 'careem_catalog',
+                'credential_type' => 'client_secret',
+            ],
+            [
+                'credential_value' => $validated['client_secret'],
+                'is_active' => true,
+            ]
+        );
+
+        // Save Restaurant ID (Optional)
+        if (!empty($validated['restaurant_id'])) {
+            ApiCredential::updateOrCreate(
+                [
+                    'service' => 'careem_catalog',
+                    'credential_type' => 'restaurant_id',
+                ],
+                [
+                    'credential_value' => $validated['restaurant_id'],
+                    'is_active' => true,
+                ]
+            );
+        }
+
+        // Save API URL (Optional)
+        if (!empty($validated['api_url'])) {
+            ApiCredential::updateOrCreate(
+                [
+                    'service' => 'careem_catalog',
+                    'credential_type' => 'api_url',
+                ],
+                [
+                    'credential_value' => $validated['api_url'],
+                    'is_active' => true,
+                ]
+            );
+        }
 
         return back()->with('success', 'Careem Catalog API credentials saved successfully!');
     }
@@ -97,21 +142,69 @@ class ApiCredentialController extends Controller
             'api_url' => 'nullable|url',
         ]);
 
+        // Save Client ID
         ApiCredential::updateOrCreate(
             [
                 'service' => 'talabat',
+                'credential_type' => 'client_id',
             ],
             [
-                'credentials' => [
-                    'client_id' => $validated['client_id'],
-                    'client_secret' => $validated['client_secret'],
-                    'chain_code' => $validated['chain_code'],
-                    'vendor_id' => $validated['vendor_id'] ?? null,
-                    'api_url' => $validated['api_url'] ?? config('platforms.talabat.api_url'),
-                ],
+                'credential_value' => $validated['client_id'],
                 'is_active' => true,
             ]
         );
+
+        // Save Client Secret
+        ApiCredential::updateOrCreate(
+            [
+                'service' => 'talabat',
+                'credential_type' => 'client_secret',
+            ],
+            [
+                'credential_value' => $validated['client_secret'],
+                'is_active' => true,
+            ]
+        );
+
+        // Save Chain Code
+        ApiCredential::updateOrCreate(
+            [
+                'service' => 'talabat',
+                'credential_type' => 'chain_code',
+            ],
+            [
+                'credential_value' => $validated['chain_code'],
+                'is_active' => true,
+            ]
+        );
+
+        // Save Vendor ID (Optional)
+        if (!empty($validated['vendor_id'])) {
+            ApiCredential::updateOrCreate(
+                [
+                    'service' => 'talabat',
+                    'credential_type' => 'vendor_id',
+                ],
+                [
+                    'credential_value' => $validated['vendor_id'],
+                    'is_active' => true,
+                ]
+            );
+        }
+
+        // Save API URL (Optional)
+        if (!empty($validated['api_url'])) {
+            ApiCredential::updateOrCreate(
+                [
+                    'service' => 'talabat',
+                    'credential_type' => 'api_url',
+                ],
+                [
+                    'credential_value' => $validated['api_url'],
+                    'is_active' => true,
+                ]
+            );
+        }
 
         return back()->with('success', 'Talabat Catalog API credentials saved successfully!');
     }

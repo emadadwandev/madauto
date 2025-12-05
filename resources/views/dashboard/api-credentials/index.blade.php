@@ -213,7 +213,7 @@
                                     type="text"
                                     name="client_id"
                                     id="careem_client_id"
-                                    value="{{ $credentials->get('careem_catalog')?->credentials['client_id'] ?? '' }}"
+                                    value="{{ $credentials->get('careem_catalog')['client_id'] ?? '' }}"
                                     placeholder="Enter Careem Client ID"
                                     class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
                                     required>
@@ -241,7 +241,7 @@
                                     type="text"
                                     name="restaurant_id"
                                     id="careem_restaurant_id"
-                                    value="{{ $credentials->get('careem_catalog')?->credentials['restaurant_id'] ?? '' }}"
+                                    value="{{ $credentials->get('careem_catalog')['restaurant_id'] ?? '' }}"
                                     placeholder="Your Careem Restaurant ID"
                                     class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
                             </div>
@@ -254,7 +254,7 @@
                                     type="url"
                                     name="api_url"
                                     id="careem_api_url"
-                                    value="{{ $credentials->get('careem_catalog')?->credentials['api_url'] ?? '' }}"
+                                    value="{{ $credentials->get('careem_catalog')['api_url'] ?? '' }}"
                                     placeholder="https://api-staging.careemnow.com"
                                     class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
                             </div>
@@ -317,7 +317,7 @@
                     <form method="POST" action="{{ route('api-credentials.talabat-catalog.store', ['subdomain' => request()->route('subdomain')]) }}" class="space-y-4">
                         @csrf
 
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
                                 <label for="talabat_client_id" class="block text-gray-700 text-sm font-bold mb-2">
                                     Client ID *
@@ -326,7 +326,7 @@
                                     type="text"
                                     name="client_id"
                                     id="talabat_client_id"
-                                    value="{{ $credentials->get('talabat')?->credentials['client_id'] ?? '' }}"
+                                    value="{{ $credentials->get('talabat')['client_id'] ?? '' }}"
                                     placeholder="Enter Talabat Client ID"
                                     class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
                                     required>
@@ -354,7 +354,7 @@
                                     type="text"
                                     name="chain_code"
                                     id="talabat_chain_code"
-                                    value="{{ $credentials->get('talabat')?->credentials['chain_code'] ?? '' }}"
+                                    value="{{ $credentials->get('talabat')['chain_code'] ?? '' }}"
                                     placeholder="Your Talabat Chain Code"
                                     class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
                                     required>
@@ -369,7 +369,7 @@
                                     type="text"
                                     name="vendor_id"
                                     id="talabat_vendor_id"
-                                    value="{{ $credentials->get('talabat')?->credentials['vendor_id'] ?? '' }}"
+                                    value="{{ $credentials->get('talabat')['vendor_id'] ?? '' }}"
                                     placeholder="Your Talabat Vendor ID"
                                     class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
                             </div>
@@ -382,8 +382,8 @@
                                     type="url"
                                     name="api_url"
                                     id="talabat_api_url"
-                                    value="{{ $credentials->get('talabat')?->credentials['api_url'] ?? '' }}"
-                                    placeholder="https://integration-middleware.stg.restaurant-partners.com"
+                                    value="{{ $credentials->get('talabat')['api_url'] ?? '' }}"
+                                    placeholder="https://pos-integration.talabat.com"
                                     class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
                             </div>
                         </div>

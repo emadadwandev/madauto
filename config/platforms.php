@@ -20,14 +20,14 @@ return [
 
     'careem' => [
         'enabled' => env('CAREEM_CATALOG_ENABLED', true),
-        'api_url' => env('CAREEM_API_URL', 'https://api-staging.careemnow.com'),
+        'api_url' => env('CAREEM_API_URL', 'https://apigateway-stg.careemdash.com/pos/api/v1'),
         'auth' => [
             'type' => 'oauth2_client_credentials',
-            'token_url' => env('CAREEM_TOKEN_URL', 'https://api-staging.careemnow.com/oauth/token'),
+            'token_url' => env('CAREEM_TOKEN_URL', 'https://apigateway-stg.careemdash.com/pos/api/v1/token'),
             // ⚠️ DEV ONLY - Production uses tenant-specific credentials from database
             'client_id' => env('CAREEM_CLIENT_ID'),
             'client_secret' => env('CAREEM_CLIENT_SECRET'),
-            'scope' => env('CAREEM_SCOPE', 'catalog:write'),
+            'scope' => env('CAREEM_SCOPE', 'pos'),
         ],
         'endpoints' => [
             // Catalog API
