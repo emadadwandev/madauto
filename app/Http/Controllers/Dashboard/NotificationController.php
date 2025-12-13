@@ -13,7 +13,7 @@ class NotificationController extends Controller
     public function show()
     {
         $tenant = tenant();
-        
+
         return view('dashboard.notifications', compact('tenant'));
     }
 
@@ -25,7 +25,7 @@ class NotificationController extends Controller
         $validated = $request->validate([
             'notifications' => 'required|array',
             'notifications.failed_orders' => 'boolean',
-            'notifications.usage_limits' => 'boolean', 
+            'notifications.usage_limits' => 'boolean',
             'notifications.payment_failures' => 'boolean',
             'notifications.team_members' => 'boolean',
             'notifications.weekly_summary' => 'boolean',
@@ -35,20 +35,20 @@ class NotificationController extends Controller
         ]);
 
         $tenant = tenant();
-        
+
         // Update tenant settings
         $settings = $tenant->settings ?? [];
         $settings['notifications'] = $validated['notifications'];
         $settings['notification_recipients'] = $validated['recipients'];
-        
+
         if ($validated['recipients'] === 'custom') {
             // Validate custom emails
-            if (!empty($validated['custom_emails'])) {
+            if (! empty($validated['custom_emails'])) {
                 $emails = array_map('trim', explode(',', $validated['custom_emails']));
                 foreach ($emails as $email) {
-                    if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+                    if (! filter_var($email, FILTER_VALIDATE_EMAIL)) {
                         return back()->withErrors([
-                            'custom_emails' => 'One or more email addresses are invalid'
+                            'custom_emails' => 'One or more email addresses are invalid',
                         ])->withInput();
                     }
                 }
@@ -57,7 +57,7 @@ class NotificationController extends Controller
         } else {
             $settings['custom_notification_emails'] = null;
         }
-        
+
         $tenant->settings = $settings;
         $tenant->save();
 

@@ -1,7 +1,7 @@
 <?php
 
-use App\Http\Controllers\Api\WebhookController;
 use App\Http\Controllers\Api\PlatformCallbackController;
+use App\Http\Controllers\Api\WebhookController;
 use Illuminate\Support\Facades\Route;
 
 // Tenant-specific webhook routes (incoming orders)

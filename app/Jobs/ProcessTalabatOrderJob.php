@@ -17,6 +17,7 @@ class ProcessTalabatOrderJob implements ShouldQueue
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
     protected $payload;
+
     protected $tenantId;
 
     /**

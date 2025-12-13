@@ -46,8 +46,7 @@ class OnboardingController extends Controller
             'location_created' => $tenant->locations()->exists(),
             'loyverse_connected' => $loyverseCredential && $loyverseCredential->is_active,
             'careem_webhook_configured' => $careemWebhookCredential && $careemWebhookCredential->is_active,
-            'platform_apis_configured' =>
-                ($careemCatalogCredential && $careemCatalogCredential->is_active) ||
+            'platform_apis_configured' => ($careemCatalogCredential && $careemCatalogCredential->is_active) ||
                 ($talabatCredential && $talabatCredential->is_active),
         ];
 
@@ -73,7 +72,7 @@ class OnboardingController extends Controller
     public function saveAccountSettings(Request $request)
     {
         $request->validate([
-            'currency' => 'required|string|in:' . implode(',', array_keys(supportedCurrencies())),
+            'currency' => 'required|string|in:'.implode(',', array_keys(supportedCurrencies())),
             'timezone' => 'required|string|timezone',
         ]);
 
@@ -290,11 +289,11 @@ class OnboardingController extends Controller
         $tenant = app(TenantContext::class)->get();
 
         // Verify minimum requirements
-        if (!$tenant->getSetting('currency') || !$tenant->getSetting('timezone')) {
+        if (! $tenant->getSetting('currency') || ! $tenant->getSetting('timezone')) {
             return back()->with('error', 'Please configure your account settings before completing onboarding.');
         }
 
-        if (!$tenant->locations()->exists()) {
+        if (! $tenant->locations()->exists()) {
             return back()->with('error', 'Please create at least one location before completing onboarding.');
         }
 

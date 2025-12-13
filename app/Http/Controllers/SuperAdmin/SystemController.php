@@ -6,11 +6,10 @@ use App\Http\Controllers\Controller;
 use App\Models\SyncLog;
 use App\Models\WebhookLog;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Queue;
-use Illuminate\Support\Facades\Log;
 
 class SystemController extends Controller
 {
@@ -53,9 +52,9 @@ class SystemController extends Controller
 
         if ($request->filled('search')) {
             $search = $request->search;
-            $query->where(function($q) use ($search) {
+            $query->where(function ($q) use ($search) {
                 $q->where('queue', 'like', "%{$search}%")
-                  ->orWhere('exception', 'like', "%{$search}%");
+                    ->orWhere('exception', 'like', "%{$search}%");
             });
         }
 
@@ -82,7 +81,7 @@ class SystemController extends Controller
         } catch (\Exception $e) {
             return redirect()
                 ->back()
-                ->with('error', 'Failed to retry job: ' . $e->getMessage());
+                ->with('error', 'Failed to retry job: '.$e->getMessage());
         }
     }
 
@@ -178,7 +177,7 @@ class SystemController extends Controller
             // Filter by level if specified
             if ($request->filled('level')) {
                 $level = strtoupper($request->level);
-                $logs = array_filter($logs, function($line) use ($level) {
+                $logs = array_filter($logs, function ($line) use ($level) {
                     return str_contains($line, ".{$level}:");
                 });
             }
@@ -203,7 +202,7 @@ class SystemController extends Controller
         } catch (\Exception $e) {
             return redirect()
                 ->back()
-                ->with('error', 'Failed to clear cache: ' . $e->getMessage());
+                ->with('error', 'Failed to clear cache: '.$e->getMessage());
         }
     }
 
@@ -230,6 +229,7 @@ class SystemController extends Controller
     {
         try {
             DB::connection()->getPdo();
+
             return ['status' => 'healthy', 'message' => 'Database connection successful'];
         } catch (\Exception $e) {
             return ['status' => 'error', 'message' => $e->getMessage()];
@@ -239,7 +239,7 @@ class SystemController extends Controller
     private function checkCache(): array
     {
         try {
-            $key = 'health_check_' . time();
+            $key = 'health_check_'.time();
             Cache::put($key, 'test', 10);
             $result = Cache::get($key);
             Cache::forget($key);
@@ -247,6 +247,7 @@ class SystemController extends Controller
             if ($result === 'test') {
                 return ['status' => 'healthy', 'message' => 'Cache working'];
             }
+
             return ['status' => 'warning', 'message' => 'Cache not storing values'];
         } catch (\Exception $e) {
             return ['status' => 'error', 'message' => $e->getMessage()];
@@ -305,7 +306,7 @@ class SystemController extends Controller
     {
         $logFile = storage_path('logs/laravel.log');
 
-        if (!file_exists($logFile)) {
+        if (! file_exists($logFile)) {
             return 0;
         }
 

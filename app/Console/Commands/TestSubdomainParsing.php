@@ -7,6 +7,7 @@ use Illuminate\Console\Command;
 class TestSubdomainParsing extends Command
 {
     protected $signature = 'test:subdomain {host}';
+
     protected $description = 'Test subdomain parsing logic';
 
     public function handle()
@@ -28,7 +29,8 @@ class TestSubdomainParsing extends Command
 
         // If subdomain equals host, no subdomain was found
         if ($subdomain === $hostWithoutPort || $subdomain === $appDomain) {
-            $this->info("No subdomain detected");
+            $this->info('No subdomain detected');
+
             return;
         }
 
@@ -36,9 +38,9 @@ class TestSubdomainParsing extends Command
 
         // Check for skip conditions
         if (in_array($subdomain, ['www', 'admin', null])) {
-            $this->info("Subdomain should be skipped");
+            $this->info('Subdomain should be skipped');
         } else {
-            $this->info("Subdomain should be processed for tenant lookup");
+            $this->info('Subdomain should be processed for tenant lookup');
         }
     }
 }

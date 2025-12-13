@@ -19,7 +19,7 @@ class Tenant extends Model
     {
         static::creating(function ($tenant) {
             if (empty($tenant->careem_api_key)) {
-                $tenant->careem_api_key = 'ck_' . Str::random(32);
+                $tenant->careem_api_key = 'ck_'.Str::random(32);
             }
         });
     }
@@ -131,6 +131,7 @@ class Tenant extends Model
     public function isPlatformEnabled(string $platform): bool
     {
         $enabledPlatforms = $this->settings['enabled_platforms'] ?? [];
+
         return in_array($platform, $enabledPlatforms);
     }
 
@@ -140,6 +141,7 @@ class Tenant extends Model
     public function isAutoAcceptEnabled(string $platform): bool
     {
         $key = "auto_accept_{$platform}";
+
         return $this->settings[$key] ?? false;
     }
 

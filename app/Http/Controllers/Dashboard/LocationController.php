@@ -2,10 +2,10 @@
 
 namespace App\Http\Controllers\Dashboard;
 
-use App\Models\Location;
-use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
+use App\Models\Location;
 use App\Services\LocationPlatformSyncService;
+use Illuminate\Http\Request;
 
 class LocationController extends Controller
 {
@@ -192,7 +192,7 @@ class LocationController extends Controller
         $location->toggleBusyMode();
 
         // Automatically sync to all connected platforms
-        $syncService = new LocationPlatformSyncService();
+        $syncService = new LocationPlatformSyncService;
         $results = $syncService->syncAllPlatforms($location);
 
         return response()->json([
@@ -210,11 +210,11 @@ class LocationController extends Controller
     {
         $this->authorizeLocation($location);
 
-        $location->is_active = !$location->is_active;
+        $location->is_active = ! $location->is_active;
         $location->save();
 
         // Automatically sync to all connected platforms
-        $syncService = new LocationPlatformSyncService();
+        $syncService = new LocationPlatformSyncService;
         $results = $syncService->syncAllPlatforms($location);
 
         return response()->json([
@@ -239,7 +239,7 @@ class LocationController extends Controller
             'platforms.*' => 'in:careem,talabat',
         ]);
 
-        $syncService = new LocationPlatformSyncService();
+        $syncService = new LocationPlatformSyncService;
         $results = [];
 
         // Determine which platforms to sync
@@ -253,7 +253,7 @@ class LocationController extends Controller
             }
         }
 
-        $allSuccess = collect($results)->every(fn($r) => $r['success']);
+        $allSuccess = collect($results)->every(fn ($r) => $r['success']);
 
         if ($allSuccess) {
             return response()->json([
@@ -282,7 +282,7 @@ class LocationController extends Controller
             'platforms.*' => 'in:careem,talabat',
         ]);
 
-        $syncService = new LocationPlatformSyncService();
+        $syncService = new LocationPlatformSyncService;
         $results = [];
 
         // Determine which platforms to sync
@@ -295,7 +295,7 @@ class LocationController extends Controller
             // Note: Talabat operating hours are managed differently via catalog API
         }
 
-        $allSuccess = collect($results)->every(fn($r) => $r['success']);
+        $allSuccess = collect($results)->every(fn ($r) => $r['success']);
 
         if ($allSuccess) {
             return response()->json([

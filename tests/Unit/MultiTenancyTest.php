@@ -2,11 +2,11 @@
 
 namespace Tests\Unit;
 
-use App\Models\Tenant;
 use App\Models\Order;
-use Tests\TestCase;
+use App\Models\Tenant;
 use App\Services\TenantContext;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\TestCase;
 
 class MultiTenancyTest extends TestCase
 {
@@ -27,7 +27,7 @@ class MultiTenancyTest extends TestCase
             'subdomain' => 'alpha',
         ]);
         $tenant2 = Tenant::factory()->create([
-            'name' => 'Restaurant Beta', 
+            'name' => 'Restaurant Beta',
             'subdomain' => 'beta',
         ]);
 
@@ -40,7 +40,7 @@ class MultiTenancyTest extends TestCase
 
         $order2 = Order::factory()->create([
             'tenant_id' => $tenant2->id,
-            'careem_order_id' => 'CAREEM-BETA-1', 
+            'careem_order_id' => 'CAREEM-BETA-1',
             'order_data' => ['total' => 200],
         ]);
 
@@ -120,7 +120,7 @@ class MultiTenancyTest extends TestCase
     {
         // Create multiple tenants with orders
         $tenants = Tenant::factory()->count(3)->create();
-        
+
         foreach ($tenants as $index => $tenant) {
             Order::factory()->count(2)->create([
                 'tenant_id' => $tenant->id,
@@ -130,14 +130,14 @@ class MultiTenancyTest extends TestCase
 
         // Test that queries are scoped to current tenant
         app(TenantContext::class)->set($tenants[1]);
-        
+
         $allOrders = Order::all();
         $pendingOrders = Order::where('status', 'pending')->get();
-        
+
         // Only tenant 2's orders should be returned
         $this->assertCount(2, $allOrders);
         $this->assertEquals(2, $pendingOrders->count());
-        
+
         // Verify the orders belong to the correct tenant
         foreach ($allOrders as $order) {
             $this->assertEquals($tenants[1]->id, $order->tenant_id);
@@ -174,7 +174,7 @@ class MultiTenancyTest extends TestCase
     public function it_handles_null_tenant_context_gracefully()
     {
         $tenant = Tenant::factory()->create();
-        
+
         Order::factory()->create([
             'tenant_id' => $tenant->id,
             'careem_order_id' => 'CAREEM-NULL-TEST',

@@ -21,12 +21,12 @@ class OrderFactory extends Factory
     {
         return [
             'tenant_id' => function () {
-                return \App\Models\Tenant::inRandomOrder()->first()?->id 
+                return \App\Models\Tenant::inRandomOrder()->first()?->id
                     ?? \App\Models\Tenant::factory()->create()->id;
             },
-            'careem_order_id' => 'CAREEM-' . $this->faker->unique()->numerify('######'),
+            'careem_order_id' => 'CAREEM-'.$this->faker->unique()->numerify('######'),
             'order_data' => [
-                'order_id' => 'CAREEM-' . $this->faker->unique()->numerify('######'),
+                'order_id' => 'CAREEM-'.$this->faker->unique()->numerify('######'),
                 'customer' => [
                     'name' => $this->faker->name(),
                     'phone' => $this->faker->phoneNumber(),
@@ -38,12 +38,12 @@ class OrderFactory extends Factory
                 ],
                 'items' => [
                     [
-                        'product_id' => 'PROD-' . $this->faker->numerify('####'),
+                        'product_id' => 'PROD-'.$this->faker->numerify('####'),
                         'name' => $this->faker->words(2, true),
-                        'sku' => 'SKU-' . $this->faker->numerify('####'),
+                        'sku' => 'SKU-'.$this->faker->numerify('####'),
                         'quantity' => $this->faker->numberBetween(1, 5),
                         'unit_price' => $this->faker->randomFloat(2, 5, 100),
-                    ]
+                    ],
                 ],
                 'pricing' => [
                     'subtotal' => $this->faker->randomFloat(2, 20, 500),

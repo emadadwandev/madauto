@@ -2,8 +2,8 @@
 
 namespace App\Services;
 
-use App\Models\Location;
 use App\Exceptions\PlatformApiException;
+use App\Models\Location;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -15,20 +15,19 @@ class LocationPlatformSyncService
     /**
      * Sync location status to Careem
      *
-     * @param Location $location
-     * @param array $options Options: is_active, is_busy
+     * @param  array  $options  Options: is_active, is_busy
      * @return array Response with success status
      */
     public function syncCareemStatus(Location $location, array $options = []): array
     {
-        if (!$location->supportsPlatform('careem')) {
+        if (! $location->supportsPlatform('careem')) {
             return [
                 'success' => false,
                 'message' => 'Location is not configured for Careem platform.',
             ];
         }
 
-        if (!$location->careem_store_id) {
+        if (! $location->careem_store_id) {
             return [
                 'success' => false,
                 'message' => 'Careem Store ID not configured for this location.',
@@ -84,7 +83,7 @@ class LocationPlatformSyncService
 
             return [
                 'success' => false,
-                'message' => 'Failed to update Careem store status: ' . $e->getMessage(),
+                'message' => 'Failed to update Careem store status: '.$e->getMessage(),
             ];
         }
     }
@@ -92,19 +91,18 @@ class LocationPlatformSyncService
     /**
      * Sync location operating hours to Careem
      *
-     * @param Location $location
      * @return array Response with success status
      */
     public function syncCareemHours(Location $location): array
     {
-        if (!$location->supportsPlatform('careem')) {
+        if (! $location->supportsPlatform('careem')) {
             return [
                 'success' => false,
                 'message' => 'Location is not configured for Careem platform.',
             ];
         }
 
-        if (!$location->careem_store_id) {
+        if (! $location->careem_store_id) {
             return [
                 'success' => false,
                 'message' => 'Careem Store ID not configured for this location.',
@@ -154,7 +152,7 @@ class LocationPlatformSyncService
 
             return [
                 'success' => false,
-                'message' => 'Failed to update Careem store hours: ' . $e->getMessage(),
+                'message' => 'Failed to update Careem store hours: '.$e->getMessage(),
             ];
         }
     }
@@ -162,20 +160,19 @@ class LocationPlatformSyncService
     /**
      * Sync location status to Talabat
      *
-     * @param Location $location
-     * @param array $options Options: is_active, is_busy
+     * @param  array  $options  Options: is_active, is_busy
      * @return array Response with success status
      */
     public function syncTalabatStatus(Location $location, array $options = []): array
     {
-        if (!$location->supportsPlatform('talabat')) {
+        if (! $location->supportsPlatform('talabat')) {
             return [
                 'success' => false,
                 'message' => 'Location is not configured for Talabat platform.',
             ];
         }
 
-        if (!$location->talabat_vendor_id) {
+        if (! $location->talabat_vendor_id) {
             return [
                 'success' => false,
                 'message' => 'Talabat Vendor ID not configured for this location.',
@@ -231,7 +228,7 @@ class LocationPlatformSyncService
 
             return [
                 'success' => false,
-                'message' => 'Failed to update Talabat vendor status: ' . $e->getMessage(),
+                'message' => 'Failed to update Talabat vendor status: '.$e->getMessage(),
             ];
         }
     }
@@ -239,8 +236,7 @@ class LocationPlatformSyncService
     /**
      * Sync location status to all configured platforms
      *
-     * @param Location $location
-     * @param array $options Options: is_active, is_busy
+     * @param  array  $options  Options: is_active, is_busy
      * @return array Results per platform
      */
     public function syncAllPlatforms(Location $location, array $options = []): array
@@ -261,7 +257,7 @@ class LocationPlatformSyncService
     /**
      * Transform opening hours to Careem format
      *
-     * @param array $hours Hours in our format: {monday: {open: "09:00", close: "22:00"}}
+     * @param  array  $hours  Hours in our format: {monday: {open: "09:00", close: "22:00"}}
      * @return array Hours in Careem format
      */
     protected function transformHoursToCareem(array $hours): array
@@ -295,13 +291,11 @@ class LocationPlatformSyncService
     /**
      * Determine Talabat vendor status based on location state
      *
-     * @param bool $isActive
-     * @param bool $isBusy
      * @return string ONLINE, OFFLINE, or BUSY
      */
     protected function determineTalabatStatus(bool $isActive, bool $isBusy): string
     {
-        if (!$isActive) {
+        if (! $isActive) {
             return 'OFFLINE';
         }
 
@@ -315,10 +309,8 @@ class LocationPlatformSyncService
     /**
      * Update sync status for a platform in location metadata
      *
-     * @param Location $location
-     * @param string $platform careem or talabat
-     * @param array $status Status data to merge
-     * @return void
+     * @param  string  $platform  careem or talabat
+     * @param  array  $status  Status data to merge
      */
     protected function updateSyncStatus(Location $location, string $platform, array $status): void
     {

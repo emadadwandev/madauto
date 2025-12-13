@@ -34,6 +34,7 @@ class IdentifyTenant
         // Skip tenant detection for main/www/admin subdomains
         if (in_array($subdomain, ['www', 'admin', null])) {
             \Log::info('IdentifyTenant: Skipping tenant detection', ['subdomain' => $subdomain]);
+
             return $next($request);
         }
 

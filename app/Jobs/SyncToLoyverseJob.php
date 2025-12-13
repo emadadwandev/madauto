@@ -2,11 +2,11 @@
 
 namespace App\Jobs;
 
+use App\Mail\SyncFailedEmail;
 use App\Models\Order;
 use App\Services\LoyverseApiService;
 use App\Services\OrderTransformerService;
 use App\Services\UsageTrackingService;
-use App\Mail\SyncFailedEmail;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;

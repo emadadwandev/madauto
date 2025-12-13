@@ -194,8 +194,8 @@
                             </div>
                             <div class="ml-3">
                                 <p class="text-sm text-blue-700">
-                                    <strong>What is this?</strong> These credentials allow the system to automatically publish your menus to Careem when you click "Publish" in the menu management area.
-                                    <br><strong>Get credentials:</strong> Contact your Careem account manager or visit the Careem Partner Portal to request Catalog API access.
+                                    <strong>What is this?</strong> OAuth2 credentials for authenticating with Careem's API to publish menus and manage orders.
+                                    <br><strong>Get credentials:</strong> Contact your Careem account manager to request OAuth2 Client ID and Client Secret.
                                 </p>
                             </div>
                         </div>
@@ -230,33 +230,49 @@
                                     placeholder="Enter Careem Client Secret"
                                     class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
                                     required>
-                                <p class="text-gray-600 text-xs italic mt-1">For security, secret is not displayed after saving</p>
+                                <p class="text-gray-600 text-xs italic mt-1">OAuth2 Client Secret (keep this secure)</p>
                             </div>
 
                             <div>
-                                <label for="careem_restaurant_id" class="block text-gray-700 text-sm font-bold mb-2">
-                                    Restaurant ID (Optional)
+                                <label for="careem_client_name" class="block text-gray-700 text-sm font-bold mb-2">
+                                    Client Name (Optional)
                                 </label>
                                 <input
                                     type="text"
-                                    name="restaurant_id"
-                                    id="careem_restaurant_id"
-                                    value="{{ $credentials->get('careem_catalog')['restaurant_id'] ?? '' }}"
-                                    placeholder="Your Careem Restaurant ID"
+                                    name="client_name"
+                                    id="careem_client_name"
+                                    value="{{ $credentials->get('careem_catalog')['client_name'] ?? '' }}"
+                                    placeholder="Your Restaurant Name"
                                     class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
+                                <p class="text-gray-600 text-xs italic mt-1">A friendly name for this client configuration</p>
                             </div>
 
                             <div>
                                 <label for="careem_api_url" class="block text-gray-700 text-sm font-bold mb-2">
-                                    API URL (Optional - Leave blank for default)
+                                    API Base URL (Optional)
                                 </label>
                                 <input
                                     type="url"
                                     name="api_url"
                                     id="careem_api_url"
                                     value="{{ $credentials->get('careem_catalog')['api_url'] ?? '' }}"
-                                    placeholder="https://api-staging.careemnow.com"
+                                    placeholder="https://pos-stg.careemdash-internal.com"
                                     class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
+                                <p class="text-gray-600 text-xs italic mt-1">Leave blank for default staging URL</p>
+                            </div>
+
+                            <div>
+                                <label for="careem_token_url" class="block text-gray-700 text-sm font-bold mb-2">
+                                    Token URL (Optional)
+                                </label>
+                                <input
+                                    type="url"
+                                    name="token_url"
+                                    id="careem_token_url"
+                                    value="{{ $credentials->get('careem_catalog')['token_url'] ?? '' }}"
+                                    placeholder="https://identity.qa.careem-engineering.com/token"
+                                    class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
+                                <p class="text-gray-600 text-xs italic mt-1">OAuth2 token endpoint (leave blank for default)</p>
                             </div>
                         </div>
 
@@ -427,7 +443,7 @@
                                 </tr>
                             </thead>
                             <tbody class="bg-white divide-y divide-gray-200">
-                                @forelse ($credentials as $credential)
+                                @forelse ($rawCredentials as $credential)
                                     <tr>
                                         <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                                             {{ ucfirst($credential->service) }}

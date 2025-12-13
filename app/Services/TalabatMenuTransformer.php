@@ -3,8 +3,6 @@
 namespace App\Services;
 
 use App\Models\Menu;
-use App\Models\MenuItem;
-use App\Models\ModifierGroup;
 use App\Models\Modifier;
 use Illuminate\Support\Str;
 
@@ -19,7 +17,7 @@ class TalabatMenuTransformer
     /**
      * Transform menu to Talabat catalog format
      *
-     * @param Menu $menu Menu model with loaded relationships
+     * @param  Menu  $menu  Menu model with loaded relationships
      * @return array Catalog structure ready for API submission
      */
     public function transform(Menu $menu): array
@@ -67,7 +65,7 @@ class TalabatMenuTransformer
                 'type' => 'Category',
                 'title' => $categoryName ?: 'General',
                 'description' => "Items in {$categoryName} category",
-                'products' => $items->pluck('id')->map(fn($id) => $this->generateId('prod', $id))->toArray(),
+                'products' => $items->pluck('id')->map(fn ($id) => $this->generateId('prod', $id))->toArray(),
             ];
 
             $categories[$categoryName] = $categoryId;
@@ -120,7 +118,7 @@ class TalabatMenuTransformer
 
             // Add tags
             $product['tags'] = [];
-            if (!$item->is_available) {
+            if (! $item->is_available) {
                 $product['tags'][] = ['key' => 'outOfStock', 'value' => 'true'];
             }
 
@@ -218,7 +216,7 @@ class TalabatMenuTransformer
     {
         // Menu image
         if ($menu->image_url) {
-            $imageId = $this->generateId('img', 'menu_' . $menu->id);
+            $imageId = $this->generateId('img', 'menu_'.$menu->id);
             $catalogItems[$imageId] = [
                 'id' => $imageId,
                 'type' => 'Image',
@@ -262,6 +260,6 @@ class TalabatMenuTransformer
 
         $cdnUrl = config('platforms.image_settings.cdn_url');
 
-        return rtrim($cdnUrl, '/') . '/' . ltrim($path, '/');
+        return rtrim($cdnUrl, '/').'/'.ltrim($path, '/');
     }
 }

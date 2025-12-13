@@ -2,8 +2,8 @@
 
 namespace Database\Factories;
 
-use App\Models\MenuItem;
 use App\Models\Menu;
+use App\Models\MenuItem;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -29,14 +29,14 @@ class MenuItemFactory extends Factory
         ];
 
         $name = $this->faker->randomElement($dishNames);
-        
+
         return [
-            'tenant_id' => fn() => \App\Models\Tenant::inRandomOrder()->first()?->id ?? \App\Models\Tenant::factory()->create()->id,
-            'menu_id' => fn() => Menu::inRandomOrder()->first()?->id ?? Menu::factory()->create()->id,
+            'tenant_id' => fn () => \App\Models\Tenant::inRandomOrder()->first()?->id ?? \App\Models\Tenant::factory()->create()->id,
+            'menu_id' => fn () => Menu::inRandomOrder()->first()?->id ?? Menu::factory()->create()->id,
             'name' => $name,
             'description' => $this->faker->sentence(8),
-            'image_url' => 'menu-items/' . $this->faker->uuid() . '.jpg',
-            'sku' => 'SKU-' . $this->faker->numerify('####'),
+            'image_url' => 'menu-items/'.$this->faker->uuid().'.jpg',
+            'sku' => 'SKU-'.$this->faker->numerify('####'),
             'category' => $this->faker->randomElement(['Appetizers', 'Main Courses', 'Desserts', 'Beverages', 'Sides']),
             'loyverse_item_id' => $this->faker->numerify('##########'),
             'loyverse_variant_id' => $this->faker->numerify('##########'),
@@ -107,7 +107,7 @@ class MenuItemFactory extends Factory
     public function appetizer(): static
     {
         $appetizers = ['Bruschetta', 'Garlic Bread', 'Caesar Salad', 'Soup of the Day', 'Spinach Dip'];
-        
+
         return $this->state(fn (array $attributes) => [
             'name' => $this->faker->randomElement($appetizers),
             'category' => 'Appetizers',
@@ -121,7 +121,7 @@ class MenuItemFactory extends Factory
     public function mainCourse(): static
     {
         $mains = ['Grilled Chicken', 'Beef Steak', 'Grilled Salmon', 'Pasta Carbonara', 'Vegetarian Lasagna'];
-        
+
         return $this->state(fn (array $attributes) => [
             'name' => $this->faker->randomElement($mains),
             'category' => 'Main Courses',
@@ -135,7 +135,7 @@ class MenuItemFactory extends Factory
     public function dessert(): static
     {
         $desserts = ['Chocolate Cake', 'Tiramisu', 'Cheesecake', 'Ice Cream Sundae', 'Fruit Tart'];
-        
+
         return $this->state(fn (array $attributes) => [
             'name' => $this->faker->randomElement($desserts),
             'category' => 'Desserts',
@@ -149,7 +149,7 @@ class MenuItemFactory extends Factory
     public function beverage(): static
     {
         $beverages = ['Coffee Latte', 'Fresh Juice', 'Iced Tea', 'Soft Drink', 'Smoothie'];
-        
+
         return $this->state(fn (array $attributes) => [
             'name' => $this->faker->randomElement($beverages),
             'category' => 'Beverages',
@@ -163,7 +163,7 @@ class MenuItemFactory extends Factory
     public function side(): static
     {
         $sides = ['French Fries', 'Onion Rings', 'Garlic Bread', 'Coleslaw', 'Vegetables'];
-        
+
         return $this->state(fn (array $attributes) => [
             'name' => $this->faker->randomElement($sides),
             'category' => 'Sides',
@@ -199,10 +199,10 @@ class MenuItemFactory extends Factory
     public function discount(): static
     {
         $price = $this->faker->randomFloat(2, 15, 40);
-        
+
         return $this->state(fn (array $attributes) => [
             'price' => $price * 0.85, // 15% discount
-            'description' => $attributes['description'] . ' (Special discount!)',
+            'description' => $attributes['description'].' (Special discount!)',
         ]);
     }
 }

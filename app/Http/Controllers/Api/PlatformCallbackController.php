@@ -43,7 +43,7 @@ class PlatformCallbackController extends Controller
                 ->where('platform_menu_id', 'like', "%{$importId}%")
                 ->first();
 
-            if (!$menuPlatform) {
+            if (! $menuPlatform) {
                 Log::warning('Talabat callback for unknown import ID', [
                     'import_id' => $importId,
                 ]);
@@ -64,8 +64,8 @@ class PlatformCallbackController extends Controller
 
             // Prepare error message if failed
             $errorMessage = null;
-            if ($status === 'failed' && !empty($errors)) {
-                $errorMessage = 'Validation errors: ' . json_encode($errors);
+            if ($status === 'failed' && ! empty($errors)) {
+                $errorMessage = 'Validation errors: '.json_encode($errors);
             }
 
             // Update menu platform status
@@ -122,7 +122,7 @@ class PlatformCallbackController extends Controller
             $status = $request->input('status');
             $errors = $request->input('errors', []);
 
-            if (!$catalogId) {
+            if (! $catalogId) {
                 return response()->json([
                     'status' => 'error',
                     'message' => 'Missing catalog_id',
@@ -135,7 +135,7 @@ class PlatformCallbackController extends Controller
                 ->where('platform_menu_id', 'like', "%{$catalogId}%")
                 ->first();
 
-            if (!$menuPlatform) {
+            if (! $menuPlatform) {
                 Log::warning('Careem callback for unknown catalog ID', [
                     'catalog_id' => $catalogId,
                 ]);
@@ -154,7 +154,7 @@ class PlatformCallbackController extends Controller
                 default => 'pending',
             };
 
-            $errorMessage = !empty($errors) ? json_encode($errors) : null;
+            $errorMessage = ! empty($errors) ? json_encode($errors) : null;
 
             // Update status
             DB::table('menu_platform')

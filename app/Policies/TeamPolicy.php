@@ -16,7 +16,7 @@ class TeamPolicy
     public function viewTeam(User $user, Tenant $tenant): bool
     {
         return $user->tenant_id === $tenant->id && (
-            $user->hasRole('tenant_admin', $tenant) || 
+            $user->hasRole('tenant_admin', $tenant) ||
             $user->hasRole('tenant_user', $tenant)
         );
     }
@@ -26,7 +26,7 @@ class TeamPolicy
      */
     public function inviteUsers(User $user, Tenant $tenant): bool
     {
-        return $user->tenant_id === $tenant->id && 
+        return $user->tenant_id === $tenant->id &&
                $user->hasRole('tenant_admin', $tenant);
     }
 
@@ -43,7 +43,7 @@ class TeamPolicy
         return $user->tenant_id === $tenant->id &&
                $user->hasRole('tenant_admin', $tenant) &&
                $targetUser->id !== $user->id &&
-               !$targetUser->hasRole('super_admin');
+               ! $targetUser->hasRole('super_admin');
     }
 
     /**
@@ -60,7 +60,7 @@ class TeamPolicy
     public function viewUserData(User $user, Tenant $tenant, User $targetUser): bool
     {
         return $user->tenant_id === $tenant->id && (
-            ($user->hasRole('tenant_admin', $tenant)) || 
+            ($user->hasRole('tenant_admin', $tenant)) ||
             $user->id === $targetUser->id
         );
     }

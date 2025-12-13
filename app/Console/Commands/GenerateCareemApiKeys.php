@@ -31,13 +31,14 @@ class GenerateCareemApiKeys extends Command
 
         if ($tenants->isEmpty()) {
             $this->info('All tenants already have Careem API keys.');
+
             return;
         }
 
         $this->info("Generating keys for {$tenants->count()} tenants...");
 
         foreach ($tenants as $tenant) {
-            $key = 'ck_' . Str::random(32);
+            $key = 'ck_'.Str::random(32);
             $tenant->update(['careem_api_key' => $key]);
             $this->info("Generated key for tenant: {$tenant->subdomain}");
         }

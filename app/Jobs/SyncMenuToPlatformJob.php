@@ -21,14 +21,18 @@ class SyncMenuToPlatformJob implements ShouldQueue
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
     public Menu $menu;
+
     public string $platform;
+
     public int $tenantId;
 
     /**
      * Job configuration
      */
     public int $tries = 3;
+
     public int $timeout = 120;
+
     public array $backoff = [60, 300, 600];  // 1 min, 5 min, 10 min
 
     /**
@@ -113,7 +117,7 @@ class SyncMenuToPlatformJob implements ShouldQueue
     protected function syncToCareem(Menu $menu): array
     {
         $apiService = new CareemApiService($this->tenantId);
-        $transformer = new CareemMenuTransformer();
+        $transformer = new CareemMenuTransformer;
 
         // Transform menu to Careem format
         $catalogData = $transformer->transform($menu);
@@ -141,7 +145,7 @@ class SyncMenuToPlatformJob implements ShouldQueue
     protected function syncToTalabat(Menu $menu): array
     {
         $apiService = new TalabatApiService($this->tenantId);
-        $transformer = new TalabatMenuTransformer();
+        $transformer = new TalabatMenuTransformer;
 
         // Transform menu to Talabat format
         $catalogData = $transformer->transform($menu);

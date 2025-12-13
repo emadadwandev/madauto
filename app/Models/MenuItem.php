@@ -125,7 +125,7 @@ class MenuItem extends Model
     /**
      * Calculate tax amount.
      */
-    public function calculateTax(float $price = null): float
+    public function calculateTax(?float $price = null): float
     {
         $basePrice = $price ?? $this->price;
 

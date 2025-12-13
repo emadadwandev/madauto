@@ -13,7 +13,7 @@ class LogUserLogin
         if (request()->isMethod('POST') && request()->is('/login')) {
             UserActivityService::logLogin($event->user);
         }
-        
+
         // Also update last_login_at timestamp
         $event->user->update(['last_login_at' => now()]);
     }

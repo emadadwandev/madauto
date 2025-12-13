@@ -20,8 +20,8 @@ class TenantFactory extends Factory
     public function definition(): array
     {
         $name = $this->faker->company();
-        $subdomain = strtolower(str_replace(' ', '', $name)) . rand(100, 999);
-        
+        $subdomain = strtolower(str_replace(' ', '', $name)).rand(100, 999);
+
         return [
             'name' => $name,
             'subdomain' => $subdomain,

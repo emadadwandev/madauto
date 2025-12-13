@@ -124,7 +124,7 @@ class ModifierController extends Controller
      */
     public function toggle(string $subdomain, Modifier $modifier)
     {
-        $modifier->is_active = !$modifier->is_active;
+        $modifier->is_active = ! $modifier->is_active;
         $modifier->save();
 
         return back()->with('success', 'Modifier status updated successfully.');
@@ -151,6 +151,7 @@ class ModifierController extends Controller
 
                 if (! $modifierId) {
                     Log::warning('Skipping modifier without ID', ['modifier_data' => $modifierData]);
+
                     continue;
                 }
 

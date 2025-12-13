@@ -80,7 +80,7 @@ class Modifier extends Model
     public function getFormattedPriceAttribute(): string
     {
         if ($this->price_adjustment > 0) {
-            return '+' . formatCurrency($this->price_adjustment);
+            return '+'.formatCurrency($this->price_adjustment);
         } elseif ($this->price_adjustment < 0) {
             return formatCurrency($this->price_adjustment);
         }

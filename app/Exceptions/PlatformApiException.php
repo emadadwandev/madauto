@@ -11,15 +11,16 @@ use Exception;
 class PlatformApiException extends Exception
 {
     protected string $platform;
+
     protected ?int $statusCode;
 
     /**
      * Create a new Platform API exception
      *
-     * @param string $platform Platform name (e.g., 'Careem', 'Talabat')
-     * @param string $message Error message
-     * @param int|null $statusCode HTTP status code
-     * @param \Throwable|null $previous Previous exception
+     * @param  string  $platform  Platform name (e.g., 'Careem', 'Talabat')
+     * @param  string  $message  Error message
+     * @param  int|null  $statusCode  HTTP status code
+     * @param  \Throwable|null  $previous  Previous exception
      */
     public function __construct(
         string $platform,

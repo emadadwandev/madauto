@@ -5,7 +5,6 @@ namespace App\Mail;
 use App\Models\Tenant;
 use App\Models\User;
 use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
@@ -16,8 +15,11 @@ class WelcomeTenantEmail extends Mailable
     use Queueable, SerializesModels;
 
     public $tenant;
+
     public $user;
+
     public $password;
+
     public $dashboardUrl;
 
     /**
@@ -39,7 +41,7 @@ class WelcomeTenantEmail extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: 'Welcome to ' . config('app.name'),
+            subject: 'Welcome to '.config('app.name'),
         );
     }
 

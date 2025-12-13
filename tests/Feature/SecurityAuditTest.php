@@ -2,13 +2,12 @@
 
 namespace Tests\Feature;
 
-use App\Models\User;
-use App\Models\Tenant;
-use App\Models\Order;
 use App\Models\ApiCredential;
-use App\Services\LoyverseApiService;
-use Tests\TestCase;
+use App\Models\Order;
+use App\Models\Tenant;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\TestCase;
 
 class SecurityAuditTest extends TestCase
 {
@@ -32,7 +31,7 @@ class SecurityAuditTest extends TestCase
             ->get("http://testtenant.localhost/dashboard/orders?search=1'; DROP TABLE users; --");
 
         $response->assertStatus(200);
-        
+
         // Verify table still exists
         $this->assertDatabaseCount('users', 1);
         $this->assertDatabaseCount('tenants', 1);
@@ -52,17 +51,17 @@ class SecurityAuditTest extends TestCase
                 [
                     'name' => '<img src=x onerror=alert("XSS")>',
                     'description' => 'javascript:alert("XSS")',
-                ]
+                ],
             ],
         ];
 
         // This would normally be handled by webhook, but testing direct input
         $response = $this->actingAs($adminUser)
-            ->post("http://testtenant.localhost/api/orders", $maliciousPayload);
+            ->post('http://testtenant.localhost/api/orders', $maliciousPayload);
 
         // Should sanitize or reject input, not execute scripts
         $response->assertStatus(400);
-        
+
         // Check if malicious content was stored
         $order = Order::where('careem_order_id', 'LIKE', '%script%')->first();
         $this->assertNull($order);
@@ -77,7 +76,7 @@ class SecurityAuditTest extends TestCase
 
         // Try to submit form without CSRF token
         $response = $this->actingAs($adminUser)
-            ->post("http://testtenant.localhost dashboard/menus", [
+            ->post('http://testtenant.localhost dashboard/menus', [
                 'name' => 'Test Menu',
             ], ['X-Requested-With' => 'XMLHttpRequest']); // But no CSRF token
 
@@ -109,7 +108,7 @@ class SecurityAuditTest extends TestCase
         $rawCredentials = \DB::table('api_credentials')
             ->where('id', $credential->id)
             ->value('credentials');
-            
+
         $this->assertStringNotContainsString($testKey, $rawCredentials);
         $this->assertStringNotContainsString('api_key', $rawCredentials);
     }
@@ -130,14 +129,14 @@ class SecurityAuditTest extends TestCase
 
         // Try to access order directly by manipulating model
         $this->actingAs($user1);
-        
+
         $order = Order::withoutGlobalScope('tenant')->find($privateOrder->id);
         $this->assertNull($order); // Should not find it due to tenant scope
 
         // Try with explicit tenant_id filter (should still be blocked by policies)
         $response = $this->actingAs($user1)
             ->get("http://tenant1.localhost/dashboard/orders/{$privateOrder->id}");
-            
+
         $response->assertStatus(404); // Not found for this tenant
     }
 
@@ -145,7 +144,7 @@ class SecurityAuditTest extends TestCase
     public function it_validates_webhook_signatures()
     {
         $tenant = Tenant::factory()->create();
-        
+
         $credential = ApiCredential::create([
             'tenant_id' => $tenant->id,
             'service' => 'careem',
@@ -179,7 +178,7 @@ class SecurityAuditTest extends TestCase
     public function it_prevents_privilege_escalation_attacks()
     {
         $tenant = Tenant::factory()->create(['subdomain' => 'testtenant']);
-        
+
         $regularUser = User::factory()->create(['tenant_id' => $tenant->id]);
         $regularUser->assignRole('tenant_user', $tenant->id);
 
@@ -193,7 +192,7 @@ class SecurityAuditTest extends TestCase
         foreach ($restrictedEndpoints as $endpoint) {
             $response = $this->actingAs($regularUser)
                 ->post("http://testtenant.localhost{$endpoint}", []);
-                
+
             $response->assertStatus(403); // Forbidden
         }
     }
@@ -207,7 +206,7 @@ class SecurityAuditTest extends TestCase
 
         // Try uploading malicious file
         $response = $this->actingAs($adminUser)
-            ->post("http://testtenant.localhost/dashboard/menus", [
+            ->post('http://testtenant.localhost/dashboard/menus', [
                 'name' => 'Test Menu',
                 'image' => [
                     'name' => 'malicious.php',
@@ -227,7 +226,7 @@ class SecurityAuditTest extends TestCase
     {
         // Laravel's built-in rate limiting should kick in
         $tenant = Tenant::factory()->create(['subdomain' => 'testtenant']);
-        
+
         // Simulate multiple failed login attempts
         for ($i = 0; $i < 10; $i++) {
             $this->post('/login', [
@@ -259,8 +258,8 @@ class SecurityAuditTest extends TestCase
         $this->actingAs($user1);
 
         // Try to access tenant2 dashboard
-        $response = $this->get("http://tenant2.localhost/dashboard");
-        
+        $response = $this->get('http://tenant2.localhost/dashboard');
+
         // Should redirect to login or show tenant1 domain, not allow access to tenant2
         // This tests subdomain isolation
         $this->assertContains($response->getStatusCode(), [200, 302, 403]);
@@ -280,11 +279,11 @@ class SecurityAuditTest extends TestCase
         ]);
 
         // Should set secure session cookie attributes
-        $response = $this->get("http://testtenant.localhost/dashboard");
+        $response = $this->get('http://testtenant.localhost/dashboard');
         $cookies = $response->headers->getCookies();
 
-        $sessionCookie = collect($cookies)->first(fn($cookie) => $cookie->getName() === 'laravel_session');
-        
+        $sessionCookie = collect($cookies)->first(fn ($cookie) => $cookie->getName() === 'laravel_session');
+
         if ($sessionCookie) {
             // In production, these should be true
             $this->assertTrue($sessionCookie->isSecure() || app()->environment('testing')); // HTTPS only in prod
@@ -296,7 +295,7 @@ class SecurityAuditTest extends TestCase
     public function it_validates_api_request_size_limits()
     {
         $tenant = Tenant::factory()->create(['subdomain' => 'testtenant']);
-        
+
         $credential = ApiCredential::create([
             'tenant_id' => $tenant->id,
             'service' => 'careem',

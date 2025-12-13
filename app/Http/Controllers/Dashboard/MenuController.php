@@ -230,14 +230,14 @@ class MenuController extends Controller
 
             // Remove platforms not in new list
             foreach ($currentPlatforms as $platform) {
-                if (!in_array($platform, $newPlatforms)) {
+                if (! in_array($platform, $newPlatforms)) {
                     $menu->removeFromPlatform($platform);
                 }
             }
 
             // Add new platforms
             foreach ($newPlatforms as $platform) {
-                if (!in_array($platform, $currentPlatforms)) {
+                if (! in_array($platform, $currentPlatforms)) {
                     $menu->assignToPlatform($platform);
                 }
             }
@@ -296,7 +296,7 @@ class MenuController extends Controller
      */
     public function toggle(string $subdomain, Menu $menu)
     {
-        $menu->is_active = !$menu->is_active;
+        $menu->is_active = ! $menu->is_active;
         $menu->save();
 
         return back()->with('success', 'Menu status updated successfully.');
@@ -366,7 +366,7 @@ class MenuController extends Controller
                 'error' => $e->getMessage(),
             ]);
 
-            return back()->with('error', 'Failed to publish menu: ' . $e->getMessage());
+            return back()->with('error', 'Failed to publish menu: '.$e->getMessage());
         }
     }
 

@@ -4,7 +4,6 @@ namespace Tests\Feature;
 
 use App\Models\Tenant;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Foundation\Testing\WithFaker;
 use Tests\TestCase;
 
 class WebhookTest extends TestCase
@@ -28,9 +27,9 @@ class WebhookTest extends TestCase
                         'name' => 'Burger',
                         'quantity' => 1,
                         'price' => 10,
-                    ]
-                ]
-            ]
+                    ],
+                ],
+            ],
         ];
 
         // Test without key
@@ -40,7 +39,7 @@ class WebhookTest extends TestCase
 
         // Test with invalid key
         $response = $this->postJson("/api/webhook/careem/{$tenant->subdomain}", $payload, [
-            'x-careem-api-key' => 'invalid-key'
+            'x-careem-api-key' => 'invalid-key',
         ]);
         $response->assertStatus(401);
         $this->assertStringContainsString('Invalid or missing x-careem-api-key header', $response->exception->getMessage());
@@ -48,7 +47,7 @@ class WebhookTest extends TestCase
         // Test with valid key (should fail on signature later, or credentials missing)
         // This proves it passed the API key check
         $response = $this->postJson("/api/webhook/careem/{$tenant->subdomain}", $payload, [
-            'x-careem-api-key' => 'valid-key'
+            'x-careem-api-key' => 'valid-key',
         ]);
         $response->assertStatus(401);
         // The message should NOT be about API key

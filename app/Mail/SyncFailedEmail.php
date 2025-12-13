@@ -4,7 +4,6 @@ namespace App\Mail;
 
 use App\Models\Order;
 use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
@@ -15,7 +14,9 @@ class SyncFailedEmail extends Mailable
     use Queueable, SerializesModels;
 
     public $order;
+
     public $errorMessage;
+
     public $dashboardUrl;
 
     /**
@@ -37,7 +38,7 @@ class SyncFailedEmail extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: 'Sync Failed Notification - Order #' . $this->order->id,
+            subject: 'Sync Failed Notification - Order #'.$this->order->id,
         );
     }
 

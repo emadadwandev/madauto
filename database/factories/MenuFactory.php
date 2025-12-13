@@ -21,12 +21,12 @@ class MenuFactory extends Factory
     public function definition(): array
     {
         $name = $this->faker->words(2, true);
-        
+
         return [
-            'tenant_id' => fn() => Tenant::inRandomOrder()->first()?->id ?? Tenant::factory()->create()->id,
+            'tenant_id' => fn () => Tenant::inRandomOrder()->first()?->id ?? Tenant::factory()->create()->id,
             'name' => $name,
             'description' => $this->faker->sentence(),
-            'image_url' => 'menus/' . $this->faker->uuid() . '.jpg',
+            'image_url' => 'menus/'.$this->faker->uuid().'.jpg',
             'status' => 'draft',
             'is_active' => $this->faker->boolean(80), // 80% chance of being active
             'published_at' => $this->faker->boolean(50) ? $this->faker->dateTimeBetween('-30 days', 'now') : null,
@@ -111,7 +111,7 @@ class MenuFactory extends Factory
     public function restaurant(): static
     {
         $name = $this->faker->randomElement(['Signature Dishes', 'Chef Specials', 'Classic Favorites', 'Gourmet Selection']);
-        
+
         return $this->state(fn (array $attributes) => [
             'name' => $name,
             'description' => 'Discover our carefully curated selection of exceptional dishes crafted with the finest ingredients.',
@@ -124,7 +124,7 @@ class MenuFactory extends Factory
     public function breakfast(): static
     {
         $name = $this->faker->randomElement(['Morning Delights', 'Breakfast Specials', 'Sunrise Menu', 'Early Bird Favorites']);
-        
+
         return $this->state(fn (array $attributes) => [
             'name' => $name,
             'description' => 'Start your day with our delicious breakfast options, prepared fresh every morning.',
@@ -137,7 +137,7 @@ class MenuFactory extends Factory
     public function cafe(): static
     {
         $name = $this->faker->randomElement(['Coffee & Snacks', 'Cafe Favorites', 'Brew & Bite Menu', 'Cozy Corner Selection']);
-        
+
         return $this->state(fn (array $attributes) => [
             'name' => $name,
             'description' => 'Artisan coffee, freshly baked pastries, and light bites perfect for any time of day.',

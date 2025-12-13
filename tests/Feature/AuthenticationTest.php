@@ -2,11 +2,11 @@
 
 namespace Tests\Feature;
 
-use App\Models\User;
-use App\Models\Tenant;
 use App\Models\Invitation;
-use Tests\TestCase;
+use App\Models\Tenant;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\TestCase;
 
 class AuthenticationTest extends TestCase
 {
@@ -36,10 +36,10 @@ class AuthenticationTest extends TestCase
         ]);
 
         $response->assertStatus(302);
-        
+
         // Should redirect to dashboard on tenant subdomain
         $response->assertRedirect('http://testtenant.localhost/dashboard');
-        
+
         $this->assertAuthenticatedAs($user);
     }
 
@@ -60,10 +60,10 @@ class AuthenticationTest extends TestCase
         ]);
 
         $response->assertStatus(302);
-        
+
         // Should redirect to super admin dashboard
         $response->assertRedirect('http://admin.localhost/super-admin/dashboard');
-        
+
         $this->assertAuthenticatedAs($superAdmin);
     }
 
@@ -79,7 +79,7 @@ class AuthenticationTest extends TestCase
 
         // Try to access super admin panel
         $response = $this->get('http://admin.localhost/super-admin/dashboard');
-        
+
         $response->assertStatus(403);
     }
 
@@ -94,7 +94,7 @@ class AuthenticationTest extends TestCase
 
         // Try to access tenant dashboard without tenant context
         $response = $this->get('http://testtenant.localhost/dashboard');
-        
+
         $response->assertStatus(403);
     }
 
@@ -116,7 +116,7 @@ class AuthenticationTest extends TestCase
 
         // Test invitation acceptance page loads
         $response = $this->get('/invitations/test-token-123');
-        
+
         $response->assertStatus(200);
         $response->assertSee('Accept Invitation');
         $response->assertSee('newuser@test.com');
@@ -126,7 +126,7 @@ class AuthenticationTest extends TestCase
     public function it_prevents_invalid_invitation_acceptance()
     {
         $response = $this->get('/invitations/invalid-token');
-        
+
         $response->assertStatus(404);
     }
 
@@ -151,18 +151,18 @@ class AuthenticationTest extends TestCase
         ]);
 
         $response->assertRedirect('http://testtenant.localhost/dashboard');
-        
+
         // Verify user was created
         $newUser = User::where('email', 'invitee@test.com')->first();
         $this->assertNotNull($newUser);
         $this->assertEquals('New User', $newUser->name);
         $this->assertEquals($tenant->id, $newUser->tenant_id);
         $this->assertTrue($newUser->hasRole('tenant_user', $tenant));
-        
+
         // Verify invitation was marked as accepted
         $invitation->refresh();
         $this->assertNotNull($invitation->accepted_at);
-        
+
         // Verify user is logged in
         $this->assertAuthenticatedAs($newUser);
     }
@@ -281,10 +281,10 @@ class AuthenticationTest extends TestCase
     public function it_handles_role_based_authorization_correctly()
     {
         $tenant = Tenant::factory()->create(['subdomain' => 'testtenant']);
-        
+
         $adminUser = User::factory()->create(['tenant_id' => $tenant->id]);
         $regularUser = User::factory()->create(['tenant_id' => $tenant->id]);
-        
+
         $adminUser->assignRole('tenant_admin', $tenant->id);
         $regularUser->assignRole('tenant_user', $tenant->id);
 

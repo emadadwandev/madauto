@@ -1,9 +1,9 @@
 <?php
 
 use App\Http\Controllers\SuperAdmin\DashboardController;
-use App\Http\Controllers\SuperAdmin\TenantController;
 use App\Http\Controllers\SuperAdmin\SubscriptionController;
 use App\Http\Controllers\SuperAdmin\SystemController;
+use App\Http\Controllers\SuperAdmin\TenantController;
 use Illuminate\Support\Facades\Route;
 
 /*

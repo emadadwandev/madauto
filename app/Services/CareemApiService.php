@@ -3,23 +3,30 @@
 namespace App\Services;
 
 use App\Exceptions\PlatformApiException;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Cache;
 
 /**
  * Careem Now API Service
- * Handles catalog/menu synchronization with Careem Now platform
+ * Handles webhook registration and client configuration with Careem Now platform
  *
- * API Documentation: https://docs.careemnow.com/#tag/Catalog-API-overview
+ * API Documentation: https://docs.careemnow.com/
  */
 class CareemApiService
 {
     protected string $baseUrl;
+
     protected string $tokenUrl;
+
     protected string $clientId;
+
     protected string $clientSecret;
+
+    protected ?string $clientName;
+
     protected string $scope;
+
     protected int $timeout;
 
     /**
@@ -27,32 +34,34 @@ class CareemApiService
      *
      * @throws \Exception If tenant credentials are not configured
      */
-    public function __construct(?int $tenantId = null)
+    public function __construct(string|int|null $tenantId = null)
     {
         $this->timeout = config('platforms.careem.sync.timeout', 30);
-        $this->scope = config('platforms.careem.auth.scope', 'catalog:write');
+        $this->scope = config('platforms.careem.auth.scope', 'pos');
+        $this->baseUrl = config('platforms.careem.api_url', 'https://pos-stg.careemdash-internal.com');
+        $this->tokenUrl = config('platforms.careem.auth.token_url', 'https://identity.qa.careem-engineering.com/token');
 
         // Load tenant-specific credentials from api_credentials table (REQUIRED for SaaS)
         if ($tenantId) {
             $credentials = $this->loadTenantCredentials($tenantId);
 
-            if (empty($credentials) || !isset($credentials['client_id']) || !isset($credentials['client_secret'])) {
-                throw new \Exception('Careem Catalog API credentials not configured for this tenant. Please configure in Settings → API Credentials.');
+            if (empty($credentials) || ! isset($credentials['client_id']) || ! isset($credentials['client_secret'])) {
+                throw new \Exception('Careem API credentials not configured for this tenant. Please configure Client ID and Client Secret in Settings → API Credentials.');
             }
 
             $this->clientId = $credentials['client_id'];
             $this->clientSecret = $credentials['client_secret'];
-            $this->baseUrl = $credentials['api_url'] ?? config('platforms.careem.api_url');
-            $this->tokenUrl = config('platforms.careem.auth.token_url');
+            $this->clientName = $credentials['client_name'] ?? null;
+            $this->baseUrl = $credentials['api_url'] ?? $this->baseUrl;
+            $this->tokenUrl = $credentials['token_url'] ?? $this->tokenUrl;
         } else {
             // Fallback to .env only for development/testing (not recommended for production)
             $this->clientId = config('platforms.careem.auth.client_id');
             $this->clientSecret = config('platforms.careem.auth.client_secret');
-            $this->baseUrl = config('platforms.careem.api_url');
-            $this->tokenUrl = config('platforms.careem.auth.token_url');
+            $this->clientName = config('platforms.careem.auth.client_name');
 
             if (empty($this->clientId) || empty($this->clientSecret)) {
-                throw new \Exception('Careem Catalog API credentials not configured. Please configure tenant-specific credentials in Settings.');
+                throw new \Exception('Careem API credentials not configured. Please configure tenant-specific credentials in Settings.');
             }
         }
     }
@@ -60,7 +69,7 @@ class CareemApiService
     /**
      * Load tenant-specific Careem credentials from database
      */
-    protected function loadTenantCredentials(int $tenantId): array
+    protected function loadTenantCredentials(string|int $tenantId): array
     {
         $credentials = \App\Models\ApiCredential::withoutGlobalScope(\App\Models\Scopes\TenantScope::class)
             ->where('tenant_id', $tenantId)
@@ -78,59 +87,59 @@ class CareemApiService
 
     /**
      * Get OAuth2 access token using client credentials flow
+     *
+     * @return string Access token
+     *
+     * @throws PlatformApiException
      */
     protected function getAccessToken(): string
     {
         $cacheKey = "careem_token_{$this->clientId}";
 
-        return Cache::remember($cacheKey, now()->addHours(1), function () {
+        return Cache::remember($cacheKey, now()->addMinutes(50), function () {
             try {
-                // Careem requires multipart/form-data for token endpoint
+                Log::info('Requesting Careem access token', [
+                    'client_id' => $this->clientId,
+                    'token_url' => $this->tokenUrl,
+                ]);
+
                 $response = Http::timeout($this->timeout)
-                    ->asMultipart()
+                    ->asForm()
                     ->post($this->tokenUrl, [
-                        [
-                            'name' => 'grant_type',
-                            'contents' => 'client_credentials'
-                        ],
-                        [
-                            'name' => 'client_id',
-                            'contents' => $this->clientId
-                        ],
-                        [
-                            'name' => 'client_secret',
-                            'contents' => $this->clientSecret
-                        ],
-                        [
-                            'name' => 'scope',
-                            'contents' => $this->scope
-                        ],
+                        'grant_type' => 'client_credentials',
+                        'client_id' => $this->clientId,
+                        'client_secret' => $this->clientSecret,
+                        'scope' => $this->scope,
                     ]);
 
-                if (!$response->successful()) {
+                if (! $response->successful()) {
                     throw new PlatformApiException(
                         'Careem',
-                        'Failed to obtain access token: ' . $response->body(),
+                        'Failed to obtain access token: '.$response->body(),
                         $response->status()
                     );
                 }
 
                 $data = $response->json();
 
-                return $data['access_token'] ?? throw new PlatformApiException(
-                    'Careem',
-                    'No access token in response'
-                );
+                if (! isset($data['access_token'])) {
+                    throw new PlatformApiException(
+                        'Careem',
+                        'No access token in response: '.$response->body()
+                    );
+                }
+
+                Log::info('Careem access token obtained successfully');
+
+                return $data['access_token'];
+
             } catch (\Exception $e) {
                 Log::error('Careem OAuth2 authentication failed', [
                     'error' => $e->getMessage(),
                     'client_id' => $this->clientId,
                 ]);
 
-                throw new PlatformApiException(
-                    'Careem',
-                    'Authentication failed: ' . $e->getMessage()
-                );
+                throw $e;
             }
         });
     }
@@ -138,16 +147,17 @@ class CareemApiService
     /**
      * Submit catalog to Careem
      *
-     * @param array $catalogData Catalog structure
-     * @param string|null $restaurantId Restaurant/merchant identifier
+     * @param  array  $catalogData  Catalog structure
+     * @param  string|null  $restaurantId  Restaurant/merchant identifier
      * @return array Response with catalog ID and status
+     *
      * @throws PlatformApiException
      */
     public function submitCatalog(array $catalogData, ?string $restaurantId = null): array
     {
         $token = $this->getAccessToken();
         $endpoint = config('platforms.careem.endpoints.catalog');
-        $url = $this->baseUrl . $endpoint;
+        $url = $this->baseUrl.$endpoint;
 
         // Add restaurant ID if provided
         if ($restaurantId) {
@@ -197,7 +207,7 @@ class CareemApiService
 
             throw new PlatformApiException(
                 'Careem',
-                'Catalog submission failed: ' . ($errorBody['message'] ?? $response->body()),
+                'Catalog submission failed: '.($errorBody['message'] ?? $response->body()),
                 $response->status()
             );
 
@@ -211,7 +221,7 @@ class CareemApiService
 
             throw new PlatformApiException(
                 'Careem',
-                'API request failed: ' . $e->getMessage()
+                'API request failed: '.$e->getMessage()
             );
         }
     }
@@ -219,16 +229,17 @@ class CareemApiService
     /**
      * Update existing catalog
      *
-     * @param string $catalogId Catalog ID
-     * @param array $catalogData Updated catalog data
+     * @param  string  $catalogId  Catalog ID
+     * @param  array  $catalogData  Updated catalog data
      * @return array Response
+     *
      * @throws PlatformApiException
      */
     public function updateCatalog(string $catalogId, array $catalogData): array
     {
         $token = $this->getAccessToken();
         $endpoint = config('platforms.careem.endpoints.catalog');
-        $url = $this->baseUrl . $endpoint . '/' . $catalogId;
+        $url = $this->baseUrl.$endpoint.'/'.$catalogId;
 
         try {
             $response = Http::timeout($this->timeout)
@@ -245,7 +256,7 @@ class CareemApiService
 
             throw new PlatformApiException(
                 'Careem',
-                'Catalog update failed: ' . $response->body(),
+                'Catalog update failed: '.$response->body(),
                 $response->status()
             );
 
@@ -254,7 +265,7 @@ class CareemApiService
         } catch (\Exception $e) {
             throw new PlatformApiException(
                 'Careem',
-                'Catalog update failed: ' . $e->getMessage()
+                'Catalog update failed: '.$e->getMessage()
             );
         }
     }
@@ -262,15 +273,16 @@ class CareemApiService
     /**
      * Delete catalog
      *
-     * @param string $catalogId Catalog ID
+     * @param  string  $catalogId  Catalog ID
      * @return bool Success status
+     *
      * @throws PlatformApiException
      */
     public function deleteCatalog(string $catalogId): bool
     {
         $token = $this->getAccessToken();
         $endpoint = config('platforms.careem.endpoints.catalog');
-        $url = $this->baseUrl . $endpoint . '/' . $catalogId;
+        $url = $this->baseUrl.$endpoint.'/'.$catalogId;
 
         try {
             $response = Http::timeout($this->timeout)
@@ -283,7 +295,7 @@ class CareemApiService
 
             throw new PlatformApiException(
                 'Careem',
-                'Catalog deletion failed: ' . $response->body(),
+                'Catalog deletion failed: '.$response->body(),
                 $response->status()
             );
 
@@ -292,7 +304,7 @@ class CareemApiService
         } catch (\Exception $e) {
             throw new PlatformApiException(
                 'Careem',
-                'Catalog deletion failed: ' . $e->getMessage()
+                'Catalog deletion failed: '.$e->getMessage()
             );
         }
     }
@@ -300,17 +312,18 @@ class CareemApiService
     /**
      * Update store status (active/inactive, busy)
      *
-     * @param string $storeId Careem store/branch ID
-     * @param bool $isActive Whether store is active
-     * @param bool $isBusy Whether store is busy
+     * @param  string  $storeId  Careem store/branch ID
+     * @param  bool  $isActive  Whether store is active
+     * @param  bool  $isBusy  Whether store is busy
      * @return array Response
+     *
      * @throws PlatformApiException
      */
     public function updateStoreStatus(string $storeId, bool $isActive, bool $isBusy): array
     {
         $token = $this->getAccessToken();
         $endpoint = config('platforms.careem.endpoints.store_status', '/stores/{storeId}/status');
-        $url = $this->baseUrl . str_replace('{storeId}', $storeId, $endpoint);
+        $url = $this->baseUrl.str_replace('{storeId}', $storeId, $endpoint);
 
         try {
             $response = Http::timeout($this->timeout)
@@ -340,7 +353,7 @@ class CareemApiService
 
             throw new PlatformApiException(
                 'Careem',
-                'Store status update failed: ' . $response->body(),
+                'Store status update failed: '.$response->body(),
                 $response->status()
             );
 
@@ -349,7 +362,7 @@ class CareemApiService
         } catch (\Exception $e) {
             throw new PlatformApiException(
                 'Careem',
-                'Store status update failed: ' . $e->getMessage()
+                'Store status update failed: '.$e->getMessage()
             );
         }
     }
@@ -357,16 +370,17 @@ class CareemApiService
     /**
      * Update store operating hours
      *
-     * @param string $storeId Careem store/branch ID
-     * @param array $hours Operating hours in Careem format
+     * @param  string  $storeId  Careem store/branch ID
+     * @param  array  $hours  Operating hours in Careem format
      * @return array Response
+     *
      * @throws PlatformApiException
      */
     public function updateStoreHours(string $storeId, array $hours): array
     {
         $token = $this->getAccessToken();
         $endpoint = config('platforms.careem.endpoints.store_hours', '/stores/{storeId}/hours');
-        $url = $this->baseUrl . str_replace('{storeId}', $storeId, $endpoint);
+        $url = $this->baseUrl.str_replace('{storeId}', $storeId, $endpoint);
 
         try {
             $response = Http::timeout($this->timeout)
@@ -394,7 +408,7 @@ class CareemApiService
 
             throw new PlatformApiException(
                 'Careem',
-                'Store hours update failed: ' . $response->body(),
+                'Store hours update failed: '.$response->body(),
                 $response->status()
             );
 
@@ -403,7 +417,7 @@ class CareemApiService
         } catch (\Exception $e) {
             throw new PlatformApiException(
                 'Careem',
-                'Store hours update failed: ' . $e->getMessage()
+                'Store hours update failed: '.$e->getMessage()
             );
         }
     }
@@ -411,15 +425,16 @@ class CareemApiService
     /**
      * Get store information from Careem
      *
-     * @param string $storeId Careem store/branch ID
+     * @param  string  $storeId  Careem store/branch ID
      * @return array Store information
+     *
      * @throws PlatformApiException
      */
     public function getStore(string $storeId): array
     {
         $token = $this->getAccessToken();
         $endpoint = config('platforms.careem.endpoints.store', '/stores/{storeId}');
-        $url = $this->baseUrl . str_replace('{storeId}', $storeId, $endpoint);
+        $url = $this->baseUrl.str_replace('{storeId}', $storeId, $endpoint);
 
         try {
             $response = Http::timeout($this->timeout)
@@ -432,7 +447,7 @@ class CareemApiService
 
             throw new PlatformApiException(
                 'Careem',
-                'Failed to retrieve store information: ' . $response->body(),
+                'Failed to retrieve store information: '.$response->body(),
                 $response->status()
             );
 
@@ -441,7 +456,7 @@ class CareemApiService
         } catch (\Exception $e) {
             throw new PlatformApiException(
                 'Careem',
-                'Failed to retrieve store information: ' . $e->getMessage()
+                'Failed to retrieve store information: '.$e->getMessage()
             );
         }
     }
@@ -450,17 +465,18 @@ class CareemApiService
      * Test API connection and authentication
      *
      * @return bool True if connection successful
+     *
+     * @throws \Exception If connection fails
      */
     public function testConnection(): bool
     {
-        try {
-            $this->getAccessToken();
-            return true;
-        } catch (\Exception $e) {
-            Log::warning('Careem connection test failed', [
-                'error' => $e->getMessage(),
-            ]);
-            return false;
-        }
+        // Test OAuth2 authentication
+        $this->getAccessToken();
+
+        Log::info('Careem API connection test successful', [
+            'client_id' => $this->clientId,
+        ]);
+
+        return true;
     }
 }

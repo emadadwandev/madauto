@@ -174,7 +174,7 @@ class ModifierGroupController extends Controller
      */
     public function toggle(string $subdomain, ModifierGroup $modifierGroup)
     {
-        $modifierGroup->is_active = !$modifierGroup->is_active;
+        $modifierGroup->is_active = ! $modifierGroup->is_active;
         $modifierGroup->save();
 
         return back()->with('success', 'Modifier group status updated successfully.');

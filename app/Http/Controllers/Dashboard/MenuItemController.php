@@ -272,7 +272,7 @@ class MenuItemController extends Controller
      */
     public function toggleAvailability(string $subdomain, Menu $menu, MenuItem $menuItem)
     {
-        $menuItem->is_available = !$menuItem->is_available;
+        $menuItem->is_available = ! $menuItem->is_available;
         $menuItem->save();
 
         $status = $menuItem->is_available ? 'available' : 'unavailable';

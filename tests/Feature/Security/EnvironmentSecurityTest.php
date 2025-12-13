@@ -3,7 +3,6 @@
 namespace Tests\Feature\Security;
 
 use Tests\TestCase;
-use Illuminate\Support\Facades\Artisan;
 
 class EnvironmentSecurityTest extends TestCase
 {
@@ -12,7 +11,7 @@ class EnvironmentSecurityTest extends TestCase
     {
         // This test ensures debug mode is disabled in production
         config(['app.debug' => false]);
-        
+
         // Debug routes should not be available
         $response = $this->get('/telescope');
         $response->assertStatus(404);
@@ -22,12 +21,12 @@ class EnvironmentSecurityTest extends TestCase
     public function it_disables_sensitive_info_in_error_responses()
     {
         config(['app.debug' => false]);
-        
+
         // Try to trigger error
         $response = $this->get('/nonexistent-route');
-        
+
         $response->assertStatus(404);
-        
+
         // Should not expose stack traces or sensitive info
         $content = $response->getContent();
         $this->assertStringNotContainsString('Stack trace', $content);
@@ -43,7 +42,7 @@ class EnvironmentSecurityTest extends TestCase
         // Check for security headers in production
         if (app()->environment('production')) {
             $headers = $response->headers;
-            
+
             // Should have secure cookie settings
             $this->assertTrue($headers->has('Set-Cookie'));
         }
@@ -63,7 +62,7 @@ class EnvironmentSecurityTest extends TestCase
 
         foreach ($requiredEnvVars as $envVar) {
             $this->assertNotNull(
-                config(strtolower(str_replace('_', '.', $envVar))), 
+                config(strtolower(str_replace('_', '.', $envVar))),
                 "Environment variable {$envVar} should be set"
             );
         }
@@ -80,7 +79,7 @@ class EnvironmentSecurityTest extends TestCase
         if (app()->environment('production')) {
             // This checks if classes are optimized
             $this->assertTrue(class_exists('Illuminate\Foundation\Application'));
-            
+
             // Verify optimize:config has been run
             $this->assertNotNull(config('app.name'), 'Config should be cached');
         }
@@ -92,7 +91,7 @@ class EnvironmentSecurityTest extends TestCase
         if (app()->environment('production')) {
             // In production, should not use SQLite
             $this->assertNotEquals('sqlite', config('database.default'), 'Production should not use SQLite');
-            
+
             // Database should use SSL
             $this->assertTrue(
                 config('database.connections.mysql.charset') === 'utf8mb4',
@@ -142,7 +141,7 @@ class EnvironmentSecurityTest extends TestCase
 
         foreach ($sensitivePaths as $path) {
             $response = $this->get($path);
-            
+
             // Should return 404, 403, or redirect, not expose file contents
             $this->assertContains($response->getStatusCode(), [404, 403, 302, 401]);
         }
@@ -154,10 +153,10 @@ class EnvironmentSecurityTest extends TestCase
         if (app()->environment('production')) {
             // Session should be secure
             $this->assertEquals('file', config('session.driver'), 'Should use file session driver');
-            
+
             // Should not allow cookie tampering
             $this->assertNull(config('session.encrypt'), 'Session encryption not set (good for driver default)');
-            
+
             // Should have proper lifetime
             $this->assertLessThanOrEqual(120, config('session.lifetime'), 'Session lifetime should be reasonable');
         }
@@ -170,7 +169,7 @@ class EnvironmentSecurityTest extends TestCase
             // In production, should enforce HTTPS where possible
             $url = config('app.url');
             $this->assertStringStartsWith('https://', $url, 'Production should use HTTPS URL');
-            
+
             // Should have secure HSTS header (would be set by web server)
             $this->assertFalse(app()->environment('local'), 'Should not run production without HTTPS');
         }
@@ -181,9 +180,9 @@ class EnvironmentSecurityTest extends TestCase
     {
         // Test API endpoints don't leak debug info
         $response = $this->get('/api/nonexistent');
-        
+
         $content = $response->getContent();
-        
+
         // Should not contain Laravel debug information
         $this->assertStringNotContainsString('Illuminate', $content);
         $this->assertStringNotContainsString('vendor', $content);
@@ -195,12 +194,12 @@ class EnvironmentSecurityTest extends TestCase
     {
         // Simulate server error
         config(['app.debug' => false]);
-        
+
         $response = $this->get('/test-server-error');
-        
+
         // Should not expose stack traces
         $this->assertContains($response->getStatusCode(), [500, 404]);
-        
+
         if ($response->getStatusCode() === 500) {
             $content = $response->getContent();
             $this->assertStringNotContainsString('Stack trace', $content);
@@ -221,7 +220,7 @@ class EnvironmentSecurityTest extends TestCase
         foreach ($storagePaths as $path) {
             if (is_dir(base_path($path))) {
                 // Check for .htaccess or equivalent protection
-                $htaccessPath = base_path($path . '/.htaccess');
+                $htaccessPath = base_path($path.'/.htaccess');
                 if (file_exists($htaccessPath)) {
                     $content = file_get_contents($htaccessPath);
                     $this->assertStringContainsString('Deny', $content, 'Storage directory should deny web access');
@@ -235,7 +234,7 @@ class EnvironmentSecurityTest extends TestCase
     {
         // Logging should be configured properly
         $this->assertNotNull(config('logging.default'), 'Default logging channel should be set');
-        
+
         if (app()->environment('production')) {
             // Should log errors, not debug info
             $logLevel = config('logging.channels.single.level', 'debug');
@@ -250,12 +249,12 @@ class EnvironmentSecurityTest extends TestCase
             // Redis configuration should be secure
             if (config('cache.default') === 'redis') {
                 $redisConfig = config('database.redis.default');
-                
+
                 // Should not expose redis config
                 $this->assertTrue(is_array($redisConfig));
-                
+
                 // Should have password if connecting to external redis
-                if (!empty($redisConfig['host']) && $redisConfig['host'] !== '127.0.0.1') {
+                if (! empty($redisConfig['host']) && $redisConfig['host'] !== '127.0.0.1') {
                     $this->assertNotNull($redisConfig['password'], 'External Redis should use authentication');
                 }
             }
@@ -267,11 +266,11 @@ class EnvironmentSecurityTest extends TestCase
     {
         // Mail configuration should use proper settings
         $this->assertNotNull(config('mail.default'), 'Mail driver should be configured');
-        
+
         if (app()->environment('production')) {
             // Should not use test mail driver in production
             $this->assertNotEquals('log', config('mail.default'), 'Production should not use log mail driver');
-            
+
             // SMTP should use proper security if enabled
             if (config('mail.default') === 'smtp') {
                 $this->assertEquals('tls', config('mail.mailers.encryption'), 'SMTP should use TLS encryption');

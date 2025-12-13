@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Landing;
 
 use App\Http\Controllers\Controller;
+use App\Mail\WelcomeTenantEmail;
 use App\Models\Role;
 use App\Models\SubscriptionPlan;
 use App\Models\Tenant;
@@ -11,9 +12,8 @@ use App\Services\SubscriptionService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Validation\Rules;
-use App\Mail\WelcomeTenantEmail;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Validation\Rules;
 
 class RegistrationController extends Controller
 {

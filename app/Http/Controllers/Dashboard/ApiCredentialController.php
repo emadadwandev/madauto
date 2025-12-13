@@ -4,8 +4,8 @@ namespace App\Http\Controllers\Dashboard;
 
 use App\Http\Controllers\Controller;
 use App\Models\ApiCredential;
-use App\Services\LoyverseApiService;
 use App\Services\CareemApiService;
+use App\Services\LoyverseApiService;
 use App\Services\TalabatApiService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -25,16 +25,19 @@ class ApiCredentialController extends Controller
     public function index(string $subdomain)
     {
         // Fetch all credentials for the current tenant
-        $allCredentials = ApiCredential::all();
+        $allCredentials = ApiCredential::get();
 
-        // Group by service and map to key-value pairs
+        // Group by service and map to key-value pairs for the form inputs
         $credentials = $allCredentials->groupBy('service')->map(function ($items) {
             return $items->mapWithKeys(function ($item) {
                 return [$item->credential_type => $item->credential_value];
             });
         });
 
-        return view('dashboard.api-credentials.index', compact('credentials'));
+        // Pass the raw collection for the "Saved Credentials" table
+        $rawCredentials = $allCredentials;
+
+        return view('dashboard.api-credentials.index', compact('credentials', 'rawCredentials'));
     }
 
     /**
@@ -70,8 +73,9 @@ class ApiCredentialController extends Controller
         $validated = $request->validate([
             'client_id' => 'required|string',
             'client_secret' => 'required|string',
-            'restaurant_id' => 'nullable|string',
+            'client_name' => 'nullable|string',
             'api_url' => 'nullable|url',
+            'token_url' => 'nullable|url',
         ]);
 
         // Save Client ID
@@ -98,22 +102,22 @@ class ApiCredentialController extends Controller
             ]
         );
 
-        // Save Restaurant ID (Optional)
-        if (!empty($validated['restaurant_id'])) {
+        // Save Client Name (Optional)
+        if (! empty($validated['client_name'])) {
             ApiCredential::updateOrCreate(
                 [
                     'service' => 'careem_catalog',
-                    'credential_type' => 'restaurant_id',
+                    'credential_type' => 'client_name',
                 ],
                 [
-                    'credential_value' => $validated['restaurant_id'],
+                    'credential_value' => $validated['client_name'],
                     'is_active' => true,
                 ]
             );
         }
 
         // Save API URL (Optional)
-        if (!empty($validated['api_url'])) {
+        if (! empty($validated['api_url'])) {
             ApiCredential::updateOrCreate(
                 [
                     'service' => 'careem_catalog',
@@ -126,7 +130,21 @@ class ApiCredentialController extends Controller
             );
         }
 
-        return back()->with('success', 'Careem Catalog API credentials saved successfully!');
+        // Save Token URL (Optional)
+        if (! empty($validated['token_url'])) {
+            ApiCredential::updateOrCreate(
+                [
+                    'service' => 'careem_catalog',
+                    'credential_type' => 'token_url',
+                ],
+                [
+                    'credential_value' => $validated['token_url'],
+                    'is_active' => true,
+                ]
+            );
+        }
+
+        return back()->with('success', 'Careem API credentials saved successfully!');
     }
 
     /**
@@ -179,7 +197,7 @@ class ApiCredentialController extends Controller
         );
 
         // Save Vendor ID (Optional)
-        if (!empty($validated['vendor_id'])) {
+        if (! empty($validated['vendor_id'])) {
             ApiCredential::updateOrCreate(
                 [
                     'service' => 'talabat',
@@ -193,7 +211,7 @@ class ApiCredentialController extends Controller
         }
 
         // Save API URL (Optional)
-        if (!empty($validated['api_url'])) {
+        if (! empty($validated['api_url'])) {
             ApiCredential::updateOrCreate(
                 [
                     'service' => 'talabat',

@@ -22,8 +22,9 @@ class TestUserSeeder extends Seeder
         $tenantAdminRole = Role::where('name', Role::TENANT_ADMIN)->first();
         $tenantUserRole = Role::where('name', Role::TENANT_USER)->first();
 
-        if (!$superAdminRole || !$tenantAdminRole || !$tenantUserRole) {
+        if (! $superAdminRole || ! $tenantAdminRole || ! $tenantUserRole) {
             $this->command->error('Roles not found! Please run RoleSeeder first.');
+
             return;
         }
 
@@ -44,7 +45,7 @@ class TestUserSeeder extends Seeder
         );
 
         // Assign super admin role
-        if (!$superAdmin->hasRole(Role::SUPER_ADMIN)) {
+        if (! $superAdmin->hasRole(Role::SUPER_ADMIN)) {
             $superAdmin->roles()->attach($superAdminRole->id, [
                 'tenant_id' => null,
             ]);
@@ -94,7 +95,7 @@ class TestUserSeeder extends Seeder
         );
 
         // Assign tenant admin role
-        if (!$tenantAdmin->hasRole(Role::TENANT_ADMIN, $tenant->id)) {
+        if (! $tenantAdmin->hasRole(Role::TENANT_ADMIN, $tenant->id)) {
             $tenantAdmin->roles()->attach($tenantAdminRole->id, [
                 'tenant_id' => $tenant->id,
             ]);
@@ -119,7 +120,7 @@ class TestUserSeeder extends Seeder
         );
 
         // Assign tenant user role
-        if (!$tenantUser->hasRole(Role::TENANT_USER, $tenant->id)) {
+        if (! $tenantUser->hasRole(Role::TENANT_USER, $tenant->id)) {
             $tenantUser->roles()->attach($tenantUserRole->id, [
                 'tenant_id' => $tenant->id,
             ]);
@@ -135,8 +136,9 @@ class TestUserSeeder extends Seeder
         // Get Business plan
         $businessPlan = SubscriptionPlan::where('slug', 'business')->first();
 
-        if (!$businessPlan) {
+        if (! $businessPlan) {
             $this->command->error('Business plan not found! Please run SubscriptionPlanSeeder first.');
+
             return;
         }
 

@@ -2,13 +2,13 @@
 
 namespace Tests\Feature;
 
-use App\Models\Tenant;
-use App\Models\Order;
 use App\Models\Menu;
 use App\Models\MenuItem;
-use Tests\TestCase;
+use App\Models\Order;
+use App\Models\Tenant;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
+use Tests\TestCase;
 
 class PerformanceTest extends TestCase
 {
@@ -34,11 +34,11 @@ class PerformanceTest extends TestCase
 
         // Test query performance
         $startTime = microtime(true);
-        
+
         $orders = Order::with('loyverseOrder')
             ->where('status', 'synced')
             ->paginate(50);
-            
+
         $endTime = microtime(true);
         $queryTime = $endTime - $startTime;
 
@@ -55,7 +55,7 @@ class PerformanceTest extends TestCase
 
         // Create menu with items and modifiers
         $menu = Menu::factory()->create(['tenant_id' => $tenant->id]);
-        
+
         // Create 100 menu items each with 5 modifier groups
         for ($i = 0; $i < 100; $i++) {
             $item = MenuItem::factory()->create([
@@ -66,12 +66,12 @@ class PerformanceTest extends TestCase
 
         // Test query count
         DB::enableQueryLog();
-        
+
         $startTime = microtime(true);
-        
+
         $menuWithItems = Menu::with(['items.modifierGroups.modifiers'])
             ->find($menu->id);
-            
+
         $endTime = microtime(true);
         $queryTime = $endTime - $startTime;
         $queryCount = count(DB::getQueryLog());
@@ -85,7 +85,7 @@ class PerformanceTest extends TestCase
     public function it_handles_concurrent_tenant_requests()
     {
         $tenants = Tenant::factory()->count(10)->create();
-        
+
         // Create orders for each tenant
         foreach ($tenants as $tenant) {
             Order::factory()->count(100)->create([
@@ -96,14 +96,14 @@ class PerformanceTest extends TestCase
 
         // Simulate concurrent requests to different tenants
         $startTime = microtime(true);
-        
+
         foreach ($tenants as $tenant) {
             \App\Services\TenantContext::set($tenant);
-            
+
             $orders = Order::where('status', 'pending')->get();
             $this->assertEquals(100, $orders->count());
         }
-        
+
         $endTime = microtime(true);
         $totalTime = $endTime - $startTime;
 
@@ -146,12 +146,12 @@ class PerformanceTest extends TestCase
             'tenant_id' => $tenant->id,
             'status' => 'synced',
         ]);
-        
+
         Order::factory()->count(3000)->create([
             'tenant_id' => $tenant->id,
             'status' => 'pending',
         ]);
-        
+
         Order::factory()->count(2000)->create([
             'tenant_id' => $tenant->id,
             'status' => 'failed',
@@ -159,18 +159,18 @@ class PerformanceTest extends TestCase
 
         // Test indexed queries
         $startTime = microtime(true);
-        
+
         $syncedOrders = Order::where('status', 'synced')->get();
         $pendingOrders = Order::where('status', 'pending')->get();
         $failedOrders = Order::where('status', 'failed')->get();
-        
+
         $endTime = microtime(true);
         $queryTime = $endTime - $startTime;
 
         $this->assertEquals(5000, $syncedOrders->count());
         $this->assertEquals(3000, $pendingOrders->count());
         $this->assertEquals(2000, $failedOrders->count());
-        
+
         // Indexed queries should be fast
         $this->assertLessThan(0.3, $queryTime, "Indexed queries took {$queryTime}s, should be < 0.3s");
     }
@@ -182,7 +182,7 @@ class PerformanceTest extends TestCase
         \App\Services\TenantContext::set($tenant);
 
         $menu = Menu::factory()->create(['tenant_id' => $tenant->id]);
-        
+
         // Create 1000 menu items
         MenuItem::factory()->count(1000)->create([
             'menu_id' => $menu->id,
@@ -192,11 +192,11 @@ class PerformanceTest extends TestCase
 
         // Test pagination performance
         $startTime = microtime(true);
-        
+
         $items = MenuItem::where('menu_id', $menu->id)
             ->orderBy('sort_order')
             ->paginate(20);
-            
+
         $endTime = microtime(true);
         $queryTime = $endTime - $startTime;
 
@@ -214,18 +214,18 @@ class PerformanceTest extends TestCase
 
         // Create test data
         Order::factory()->count(100)->create(['tenant_id' => $tenant->id]);
-        
+
         // Test API endpoint performance
         $startTime = microtime(true);
-        
+
         $response = $this->actingAs($user)
             ->get("http://{$tenant->subdomain}.localhost/api/orders");
-            
+
         $endTime = microtime(true);
         $responseTime = $endTime - $startTime;
 
         $response->assertStatus(200);
-        
+
         // API responses should be fast
         $this->assertLessThan(0.5, $responseTime, "API response took {$responseTime}s, should be < 0.5s");
     }
@@ -237,16 +237,16 @@ class PerformanceTest extends TestCase
         \App\Services\TenantContext::set($tenant);
 
         $memoryBefore = memory_get_usage();
-        
+
         // Process large dataset
         for ($i = 0; $i < 10; $i++) {
             Order::factory()->count(100)->create(['tenant_id' => $tenant->id]);
-            
+
             // Load and process
             $orders = Order::all();
             unset($orders); // Free memory
         }
-        
+
         $memoryAfter = memory_get_usage();
         $memoryUsed = $memoryAfter - $memoryBefore;
 
@@ -259,7 +259,7 @@ class PerformanceTest extends TestCase
     public function it_handles_concurrent_tenant_context_switching()
     {
         $tenants = Tenant::factory()->count(5)->create();
-        
+
         // Create orders for each tenant
         foreach ($tenants as $index => $tenant) {
             Order::factory()->count(100)->create([
@@ -270,19 +270,19 @@ class PerformanceTest extends TestCase
 
         // Rapidly switch between tenants and query data
         $startTime = microtime(true);
-        
+
         foreach ($tenants as $index => $tenant) {
             \App\Services\TenantContext::set($tenant);
-            
+
             $orders = Order::all();
             $this->assertEquals(100, $orders->count());
-            
+
             // Verify data isolation
             foreach ($orders as $order) {
                 $this->assertStringContainsString("TENANT-{$index}", $order->careem_order_id);
             }
         }
-        
+
         $endTime = microtime(true);
         $switchTime = $endTime - $startTime;
 
@@ -294,18 +294,18 @@ class PerformanceTest extends TestCase
     public function it_optimizes_database_connection_pooling()
     {
         $tenants = Tenant::factory()->count(20)->create();
-        
+
         // Simulate simultaneous tenant operations
         $startTime = microtime(true);
-        
+
         foreach ($tenants as $tenant) {
             \App\Services\TenantContext::set($tenant);
-            
+
             // Quick operation that doesn't require complex queries
             $orderCount = Order::count();
             $this->assertEquals(0, $orderCount);
         }
-        
+
         $endTime = microtime(true);
         $totalTime = $endTime - $startTime;
 
@@ -321,15 +321,15 @@ class PerformanceTest extends TestCase
 
         // Create test data
         Order::factory()->count(500)->create(['tenant_id' => $tenant->id]);
-        
+
         // Test multiple cache calls
         $startTime = microtime(true);
-        
+
         for ($i = 0; $i < 10; $i++) {
             $orders = Order::all();
             $this->assertEquals(500, $orders->count());
         }
-        
+
         $endTime = microtime(true);
         $cacheTime = $endTime - $startTime;
 

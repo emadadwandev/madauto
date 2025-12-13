@@ -8,13 +8,13 @@ use App\Http\Controllers\Dashboard\MenuController;
 use App\Http\Controllers\Dashboard\MenuItemController;
 use App\Http\Controllers\Dashboard\ModifierController;
 use App\Http\Controllers\Dashboard\ModifierGroupController;
+use App\Http\Controllers\Dashboard\NotificationController;
 use App\Http\Controllers\Dashboard\OnboardingController;
 use App\Http\Controllers\Dashboard\OrderController;
 use App\Http\Controllers\Dashboard\ProductMappingController;
 use App\Http\Controllers\Dashboard\SubscriptionController;
 use App\Http\Controllers\Dashboard\SyncLogController;
 use App\Http\Controllers\Dashboard\TeamController;
-use App\Http\Controllers\Dashboard\NotificationController;
 use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
 
@@ -91,7 +91,7 @@ Route::middleware(['auth', 'verified'])->get('/test-verified-required', function
 
 // Debug route to check session and tenant context
 Route::get('/debug-session', function (\Illuminate\Http\Request $request) {
-    $middleware = new \App\Http\Middleware\IdentifyTenant();
+    $middleware = new \App\Http\Middleware\IdentifyTenant;
 
     $tenantContext = app()->bound(\App\Services\TenantContext::class) ?
         app(\App\Services\TenantContext::class)->get() : null;
@@ -137,12 +137,12 @@ Route::get('/test-manual-auth/{userId}', function (\Illuminate\Http\Request $req
         $allUsers = \App\Models\User::all(['id', 'email', 'tenant_id']);
 
         // Find the user
-        $user = \App\Models\User::find((int)$userId);
-        if (!$user) {
+        $user = \App\Models\User::find((int) $userId);
+        if (! $user) {
             return response()->json([
                 'error' => 'User not found',
                 'user_id_received' => $userId,
-                'user_id_as_int' => (int)$userId,
+                'user_id_as_int' => (int) $userId,
                 'route_params' => $request->route()->parameters(),
                 'all_users' => $allUsers->toArray(),
             ]);
@@ -217,7 +217,7 @@ Route::get('/test-session-debug', function (\Illuminate\Http\Request $request) {
         ->orderBy('last_activity', 'desc')
         ->take(5)
         ->get(['id', 'user_id', 'ip_address', 'last_activity'])
-        ->map(function($s) {
+        ->map(function ($s) {
             return [
                 'id' => $s->id,
                 'user_id' => $s->user_id,
@@ -457,5 +457,5 @@ Route::get('/debug-db/{id}', function ($subdomain, $id) {
         'tenant_match' => ($mapping && $tenant && $mapping->tenant_id === $tenant->id) ? 'YES' : 'NO',
         'all_mappings_count' => \App\Models\ProductMapping::withoutGlobalScopes()->count(),
     ];
-});// Include authentication routes for tenant subdomains
+}); // Include authentication routes for tenant subdomains
 require __DIR__.'/auth.php';

@@ -26,13 +26,13 @@ class VerifyWebhookSignature
 
         // Get tenant from route parameter
         $tenant = $request->route('tenant');
-        if (!$tenant) {
+        if (! $tenant) {
             abort(400, 'Tenant not specified in webhook URL.');
         }
 
         // Find and set tenant context
         $tenantModel = \App\Models\Tenant::where('subdomain', $tenant)->first();
-        if (!$tenantModel) {
+        if (! $tenantModel) {
             abort(404, 'Tenant not found.');
         }
 
@@ -47,7 +47,7 @@ class VerifyWebhookSignature
 
         // Get tenant-specific credentials
         $credentials = $this->apiCredentialRepository->getActiveCredentials('careem');
-        if (!$credentials || !isset($credentials['webhook_secret'])) {
+        if (! $credentials || ! isset($credentials['webhook_secret'])) {
             abort(401, 'Webhook secret not configured for this tenant.');
         }
 

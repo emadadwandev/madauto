@@ -27,13 +27,13 @@ class VerifyTalabatApiKey
 
         // Get tenant from route parameter
         $tenant = $request->route('tenant');
-        if (!$tenant) {
+        if (! $tenant) {
             abort(400, 'Tenant not specified in webhook URL.');
         }
 
         // Find and set tenant context
         $tenantModel = \App\Models\Tenant::where('subdomain', $tenant)->first();
-        if (!$tenantModel) {
+        if (! $tenantModel) {
             abort(404, 'Tenant not found.');
         }
 

@@ -3,17 +3,17 @@
 namespace App\Http\Controllers\SuperAdmin;
 
 use App\Http\Controllers\Controller;
+use App\Mail\WelcomeTenantEmail;
+use App\Models\Role;
+use App\Models\Subscription;
+use App\Models\SubscriptionPlan;
 use App\Models\Tenant;
 use App\Models\User;
-use App\Models\SubscriptionPlan;
-use App\Models\Subscription;
-use App\Models\Role;
 use Illuminate\Http\Request;
-use Illuminate\Validation\Rule;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\DB;
-use App\Mail\WelcomeTenantEmail;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Validation\Rule;
 
 class TenantController extends Controller
 {
@@ -127,7 +127,7 @@ class TenantController extends Controller
 
             // Create tenant admin user
             $user = User::create([
-                'name' => $validated['name'] . ' Admin',
+                'name' => $validated['name'].' Admin',
                 'email' => $validated['email'],
                 'password' => Hash::make($validated['password']),
                 'email_verified_at' => now(),
@@ -171,7 +171,7 @@ class TenantController extends Controller
             return redirect()
                 ->back()
                 ->withInput()
-                ->with('error', 'Failed to create tenant: ' . $e->getMessage());
+                ->with('error', 'Failed to create tenant: '.$e->getMessage());
         }
     }
 

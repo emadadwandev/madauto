@@ -16,7 +16,7 @@ class CareemMenuTransformer
     /**
      * Transform menu to Careem catalog format
      *
-     * @param Menu $menu Menu model with loaded relationships
+     * @param  Menu  $menu  Menu model with loaded relationships
      * @return array Catalog structure ready for API submission
      */
     public function transform(Menu $menu): array
@@ -151,6 +151,6 @@ class CareemMenuTransformer
 
         $cdnUrl = config('platforms.image_settings.cdn_url');
 
-        return rtrim($cdnUrl, '/') . '/' . ltrim($path, '/');
+        return rtrim($cdnUrl, '/').'/'.ltrim($path, '/');
     }
 }

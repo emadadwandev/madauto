@@ -3,9 +3,9 @@
 namespace App\Services;
 
 use App\Exceptions\PlatformApiException;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Cache;
 
 /**
  * Talabat (Delivery Hero) API Service
@@ -16,10 +16,15 @@ use Illuminate\Support\Facades\Cache;
 class TalabatApiService
 {
     protected string $baseUrl;
+
     protected string $tokenUrl;
+
     protected string $clientId;
+
     protected string $clientSecret;
+
     protected string $chainCode;
+
     protected int $timeout;
 
     /**
@@ -27,7 +32,7 @@ class TalabatApiService
      *
      * @throws \Exception If tenant credentials are not configured
      */
-    public function __construct(?int $tenantId = null)
+    public function __construct(string|int|null $tenantId = null)
     {
         $this->timeout = config('platforms.talabat.sync.timeout', 60);
 
@@ -35,7 +40,7 @@ class TalabatApiService
         if ($tenantId) {
             $credentials = $this->loadTenantCredentials($tenantId);
 
-            if (empty($credentials) || !isset($credentials['client_id']) || !isset($credentials['client_secret']) || !isset($credentials['chain_code'])) {
+            if (empty($credentials) || ! isset($credentials['client_id']) || ! isset($credentials['client_secret']) || ! isset($credentials['chain_code'])) {
                 throw new \Exception('Talabat Catalog API credentials not configured for this tenant. Please configure in Settings → API Credentials.');
             }
 
@@ -61,7 +66,7 @@ class TalabatApiService
     /**
      * Load tenant-specific Talabat credentials from database
      */
-    protected function loadTenantCredentials(int $tenantId): array
+    protected function loadTenantCredentials(string|int $tenantId): array
     {
         $credentials = \App\Models\ApiCredential::withoutGlobalScope(\App\Models\Scopes\TenantScope::class)
             ->where('tenant_id', $tenantId)
@@ -93,10 +98,10 @@ class TalabatApiService
                         'client_secret' => $this->clientSecret,
                     ]);
 
-                if (!$response->successful()) {
+                if (! $response->successful()) {
                     throw new PlatformApiException(
                         'Talabat',
-                        'Failed to obtain access token: ' . $response->body(),
+                        'Failed to obtain access token: '.$response->body(),
                         $response->status()
                     );
                 }
@@ -115,7 +120,7 @@ class TalabatApiService
 
                 throw new PlatformApiException(
                     'Talabat',
-                    'Authentication failed: ' . $e->getMessage()
+                    'Authentication failed: '.$e->getMessage()
                 );
             }
         });
@@ -124,10 +129,11 @@ class TalabatApiService
     /**
      * Submit full catalog to Talabat (Delivery Hero)
      *
-     * @param array $catalogData Full catalog structure
-     * @param string|null $posVendorId Optional vendor ID (defaults to chainCode)
-     * @param string|null $callbackUrl URL for async validation results
+     * @param  array  $catalogData  Full catalog structure
+     * @param  string|null  $posVendorId  Optional vendor ID (defaults to chainCode)
+     * @param  string|null  $callbackUrl  URL for async validation results
      * @return array Response with import ID and status
+     *
      * @throws PlatformApiException
      */
     public function submitCatalog(array $catalogData, ?string $posVendorId = null, ?string $callbackUrl = null): array
@@ -136,7 +142,7 @@ class TalabatApiService
         $vendorId = $posVendorId ?? $this->chainCode;
 
         $endpoint = str_replace('{chainCode}', $this->chainCode, config('platforms.talabat.endpoints.catalog'));
-        $url = $this->baseUrl . $endpoint;
+        $url = $this->baseUrl.$endpoint;
 
         // Build request payload
         $payload = [
@@ -151,7 +157,7 @@ class TalabatApiService
         Log::info('Submitting catalog to Talabat', [
             'vendor_id' => $vendorId,
             'items_count' => count($payload['items']),
-            'has_callback' => !is_null($callbackUrl),
+            'has_callback' => ! is_null($callbackUrl),
         ]);
 
         try {
@@ -191,7 +197,7 @@ class TalabatApiService
 
             throw new PlatformApiException(
                 'Talabat',
-                'Catalog submission failed: ' . ($errorBody['message'] ?? $response->body()),
+                'Catalog submission failed: '.($errorBody['message'] ?? $response->body()),
                 $response->status()
             );
 
@@ -205,7 +211,7 @@ class TalabatApiService
 
             throw new PlatformApiException(
                 'Talabat',
-                'API request failed: ' . $e->getMessage()
+                'API request failed: '.$e->getMessage()
             );
         }
     }
@@ -213,8 +219,8 @@ class TalabatApiService
     /**
      * Get menu import logs for a vendor
      *
-     * @param string $posVendorId Vendor ID
-     * @param array $options Query options (from, to, limit, sort)
+     * @param  string  $posVendorId  Vendor ID
+     * @param  array  $options  Query options (from, to, limit, sort)
      * @return array Import logs
      */
     public function getMenuImportLogs(string $posVendorId, array $options = []): array
@@ -226,7 +232,7 @@ class TalabatApiService
             [$this->chainCode, $posVendorId],
             config('platforms.talabat.endpoints.menu_logs')
         );
-        $url = $this->baseUrl . $endpoint;
+        $url = $this->baseUrl.$endpoint;
 
         $queryParams = [];
 
@@ -257,7 +263,7 @@ class TalabatApiService
 
             throw new PlatformApiException(
                 'Talabat',
-                'Failed to retrieve menu import logs: ' . $response->body(),
+                'Failed to retrieve menu import logs: '.$response->body(),
                 $response->status()
             );
 
@@ -266,7 +272,7 @@ class TalabatApiService
         } catch (\Exception $e) {
             throw new PlatformApiException(
                 'Talabat',
-                'Failed to retrieve menu import logs: ' . $e->getMessage()
+                'Failed to retrieve menu import logs: '.$e->getMessage()
             );
         }
     }
@@ -274,21 +280,22 @@ class TalabatApiService
     /**
      * Update vendor availability status
      *
-     * @param string $vendorId POS vendor ID
-     * @param string $status ONLINE, OFFLINE, or BUSY
-     * @param string|null $reason Reason for status change (optional)
+     * @param  string  $vendorId  POS vendor ID
+     * @param  string  $status  ONLINE, OFFLINE, or BUSY
+     * @param  string|null  $reason  Reason for status change (optional)
      * @return array Response
+     *
      * @throws PlatformApiException
      */
     public function updateVendorStatus(string $vendorId, string $status, ?string $reason = null): array
     {
         $token = $this->getAccessToken();
         $endpoint = config('platforms.talabat.endpoints.vendor_status', '/pos/vendors/{vendorId}/status');
-        $url = $this->baseUrl . str_replace('{vendorId}', $vendorId, $endpoint);
+        $url = $this->baseUrl.str_replace('{vendorId}', $vendorId, $endpoint);
 
         $validStatuses = ['ONLINE', 'OFFLINE', 'BUSY'];
-        if (!in_array($status, $validStatuses)) {
-            throw new \InvalidArgumentException("Invalid status. Must be one of: " . implode(', ', $validStatuses));
+        if (! in_array($status, $validStatuses)) {
+            throw new \InvalidArgumentException('Invalid status. Must be one of: '.implode(', ', $validStatuses));
         }
 
         try {
@@ -324,7 +331,7 @@ class TalabatApiService
 
             throw new PlatformApiException(
                 'Talabat',
-                'Vendor status update failed: ' . $response->body(),
+                'Vendor status update failed: '.$response->body(),
                 $response->status()
             );
 
@@ -333,7 +340,7 @@ class TalabatApiService
         } catch (\Exception $e) {
             throw new PlatformApiException(
                 'Talabat',
-                'Vendor status update failed: ' . $e->getMessage()
+                'Vendor status update failed: '.$e->getMessage()
             );
         }
     }
@@ -341,15 +348,16 @@ class TalabatApiService
     /**
      * Get vendor availability status
      *
-     * @param string $vendorId POS vendor ID
+     * @param  string  $vendorId  POS vendor ID
      * @return array Vendor status information
+     *
      * @throws PlatformApiException
      */
     public function getVendorStatus(string $vendorId): array
     {
         $token = $this->getAccessToken();
         $endpoint = config('platforms.talabat.endpoints.vendor_status', '/pos/vendors/{vendorId}/status');
-        $url = $this->baseUrl . str_replace('{vendorId}', $vendorId, $endpoint);
+        $url = $this->baseUrl.str_replace('{vendorId}', $vendorId, $endpoint);
 
         try {
             $response = Http::timeout($this->timeout)
@@ -362,7 +370,7 @@ class TalabatApiService
 
             throw new PlatformApiException(
                 'Talabat',
-                'Failed to retrieve vendor status: ' . $response->body(),
+                'Failed to retrieve vendor status: '.$response->body(),
                 $response->status()
             );
 
@@ -371,7 +379,7 @@ class TalabatApiService
         } catch (\Exception $e) {
             throw new PlatformApiException(
                 'Talabat',
-                'Failed to retrieve vendor status: ' . $e->getMessage()
+                'Failed to retrieve vendor status: '.$e->getMessage()
             );
         }
     }
@@ -385,11 +393,13 @@ class TalabatApiService
     {
         try {
             $this->getAccessToken();
+
             return true;
         } catch (\Exception $e) {
             Log::warning('Talabat connection test failed', [
                 'error' => $e->getMessage(),
             ]);
+
             return false;
         }
     }

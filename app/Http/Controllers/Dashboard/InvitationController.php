@@ -198,7 +198,7 @@ class InvitationController extends Controller
             'subdomain_param' => $subdomain,
             'invitation_param' => $invitation,
             'route_params' => $request->route()->parameters(),
-            'request_all' => $request->all()
+            'request_all' => $request->all(),
         ]);
 
         $this->authorize('invite', User::class);

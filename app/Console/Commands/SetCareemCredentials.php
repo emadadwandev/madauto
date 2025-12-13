@@ -32,8 +32,10 @@ class SetCareemCredentials extends Command
         $clientSecret = $this->argument('client_secret');
 
         $tenant = Tenant::find($tenantId);
-        if (!$tenant) {
+
+        if (! $tenant) {
             $this->error("Tenant with ID {$tenantId} not found.");
+
             return 1;
         }
 
@@ -64,6 +66,7 @@ class SetCareemCredentials extends Command
         );
 
         $this->info("Careem credentials set successfully for tenant {$tenantId}.");
+
         return 0;
     }
 }

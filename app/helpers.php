@@ -195,7 +195,7 @@ if (! function_exists('formatCurrency')) {
             $currencyConfig['thousands_separator'] ?? ','
         );
 
-        if (!$showSymbol) {
+        if (! $showSymbol) {
             return $formatted;
         }
 
@@ -203,10 +203,10 @@ if (! function_exists('formatCurrency')) {
         $position = $currencyConfig['symbol_position'] ?? 'before';
 
         if ($position === 'before') {
-            return $symbol . ' ' . $formatted;
+            return $symbol.' '.$formatted;
         }
 
-        return $formatted . ' ' . $symbol;
+        return $formatted.' '.$symbol;
     }
 }
 
