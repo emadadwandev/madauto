@@ -33,6 +33,3 @@ Route::prefix('invitations')->name('invitations.')->group(function () {
     Route::get('/{token}', [InvitationController::class, 'show'])->name('show');
     Route::post('/{token}/accept', [InvitationController::class, 'accept'])->name('accept');
 });
-
-// Include authentication routes (login, logout, password reset, etc.)
-require __DIR__.'/auth.php';

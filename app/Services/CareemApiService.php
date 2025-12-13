@@ -479,4 +479,721 @@ class CareemApiService
 
         return true;
     }
+
+    // ============================================================================
+    // BRAND API METHODS
+    // ============================================================================
+
+    /**
+     * Create a new brand
+     *
+     * @param  string  $brandId  A unique brand ID string (e.g., "KFC")
+     * @param  string  $name  Brand name (e.g., "KFC")
+     * @return array Response with brand details
+     *
+     * @throws PlatformApiException
+     */
+    public function createBrand(string $brandId, string $name): array
+    {
+        $token = $this->getAccessToken();
+        $endpoint = config('platforms.careem.endpoints.brands');
+
+        Log::info('Creating Careem brand', [
+            'brand_id' => $brandId,
+            'name' => $name,
+        ]);
+
+        try {
+            $response = Http::timeout($this->timeout)
+                ->withToken($token)
+                ->withHeaders([
+                    'User-Agent' => 'Careem-Loyverse-Integration/1.0',
+                ])
+                ->post($this->baseUrl.$endpoint, [
+                    'id' => $brandId,
+                    'name' => $name,
+                ]);
+
+            if (! $response->successful()) {
+                throw new PlatformApiException(
+                    'Careem',
+                    'Brand creation failed: '.$response->body(),
+                    $response->status()
+                );
+            }
+
+            Log::info('Careem brand created successfully', [
+                'brand_id' => $brandId,
+                'response' => $response->json(),
+            ]);
+
+            return $response->json();
+
+        } catch (\Exception $e) {
+            Log::error('Careem brand creation failed', [
+                'brand_id' => $brandId,
+                'error' => $e->getMessage(),
+            ]);
+
+            throw $e;
+        }
+    }
+
+    /**
+     * Get brand details by ID
+     *
+     * @param  string  $brandId  Brand ID
+     * @return array Brand details
+     *
+     * @throws PlatformApiException
+     */
+    public function getBrand(string $brandId): array
+    {
+        $token = $this->getAccessToken();
+        $endpoint = str_replace('{brand_id}', $brandId, config('platforms.careem.endpoints.brand_detail'));
+
+        try {
+            $response = Http::timeout($this->timeout)
+                ->withToken($token)
+                ->withHeaders([
+                    'User-Agent' => 'Careem-Loyverse-Integration/1.0',
+                ])
+                ->get($this->baseUrl.$endpoint);
+
+            if (! $response->successful()) {
+                throw new PlatformApiException(
+                    'Careem',
+                    'Failed to fetch brand: '.$response->body(),
+                    $response->status()
+                );
+            }
+
+            return $response->json();
+
+        } catch (\Exception $e) {
+            Log::error('Careem brand fetch failed', [
+                'brand_id' => $brandId,
+                'error' => $e->getMessage(),
+            ]);
+
+            throw $e;
+        }
+    }
+
+    /**
+     * List all brands with pagination
+     *
+     * @param  int  $pageNumber  Page number (default: 1)
+     * @param  int  $pageSize  Results per page (default: 20, max: 20)
+     * @return array Paginated brand list
+     *
+     * @throws PlatformApiException
+     */
+    public function listBrands(int $pageNumber = 1, int $pageSize = 20): array
+    {
+        $token = $this->getAccessToken();
+        $endpoint = config('platforms.careem.endpoints.brands');
+
+        try {
+            $response = Http::timeout($this->timeout)
+                ->withToken($token)
+                ->withHeaders([
+                    'User-Agent' => 'Careem-Loyverse-Integration/1.0',
+                ])
+                ->get($this->baseUrl.$endpoint, [
+                    'page_number' => $pageNumber,
+                    'page_size' => min($pageSize, 20),
+                ]);
+
+            if (! $response->successful()) {
+                throw new PlatformApiException(
+                    'Careem',
+                    'Failed to list brands: '.$response->body(),
+                    $response->status()
+                );
+            }
+
+            return $response->json();
+
+        } catch (\Exception $e) {
+            Log::error('Careem brand list failed', [
+                'error' => $e->getMessage(),
+            ]);
+
+            throw $e;
+        }
+    }
+
+    /**
+     * Update existing brand
+     *
+     * @param  string  $brandId  Brand ID
+     * @param  string  $name  New brand name
+     * @return array Updated brand details
+     *
+     * @throws PlatformApiException
+     */
+    public function updateBrand(string $brandId, string $name): array
+    {
+        $token = $this->getAccessToken();
+        $endpoint = str_replace('{brand_id}', $brandId, config('platforms.careem.endpoints.brand_detail'));
+
+        Log::info('Updating Careem brand', [
+            'brand_id' => $brandId,
+            'name' => $name,
+        ]);
+
+        try {
+            $response = Http::timeout($this->timeout)
+                ->withToken($token)
+                ->withHeaders([
+                    'User-Agent' => 'Careem-Loyverse-Integration/1.0',
+                ])
+                ->put($this->baseUrl.$endpoint, [
+                    'name' => $name,
+                ]);
+
+            if (! $response->successful()) {
+                throw new PlatformApiException(
+                    'Careem',
+                    'Brand update failed: '.$response->body(),
+                    $response->status()
+                );
+            }
+
+            Log::info('Careem brand updated successfully', [
+                'brand_id' => $brandId,
+            ]);
+
+            return $response->json();
+
+        } catch (\Exception $e) {
+            Log::error('Careem brand update failed', [
+                'brand_id' => $brandId,
+                'error' => $e->getMessage(),
+            ]);
+
+            throw $e;
+        }
+    }
+
+    /**
+     * Delete brand
+     *
+     * @param  string  $brandId  Brand ID
+     * @return array Deletion confirmation
+     *
+     * @throws PlatformApiException
+     */
+    public function deleteBrand(string $brandId): array
+    {
+        $token = $this->getAccessToken();
+        $endpoint = str_replace('{brand_id}', $brandId, config('platforms.careem.endpoints.brand_detail'));
+
+        Log::warning('Deleting Careem brand', [
+            'brand_id' => $brandId,
+        ]);
+
+        try {
+            $response = Http::timeout($this->timeout)
+                ->withToken($token)
+                ->withHeaders([
+                    'User-Agent' => 'Careem-Loyverse-Integration/1.0',
+                ])
+                ->delete($this->baseUrl.$endpoint);
+
+            if (! $response->successful()) {
+                throw new PlatformApiException(
+                    'Careem',
+                    'Brand deletion failed: '.$response->body(),
+                    $response->status()
+                );
+            }
+
+            Log::info('Careem brand deleted successfully', [
+                'brand_id' => $brandId,
+            ]);
+
+            return $response->json();
+
+        } catch (\Exception $e) {
+            Log::error('Careem brand deletion failed', [
+                'brand_id' => $brandId,
+                'error' => $e->getMessage(),
+            ]);
+
+            throw $e;
+        }
+    }
+
+    // ============================================================================
+    // BRANCH API METHODS
+    // ============================================================================
+
+    /**
+     * Create or update a branch
+     *
+     * @param  string  $brandId  Brand ID that owns this branch
+     * @param  string  $branchId  A unique branch ID string
+     * @param  string  $name  Branch name (e.g., "KFC, Marina Mall")
+     * @return array Branch details
+     *
+     * @throws PlatformApiException
+     */
+    public function createOrUpdateBranch(string $brandId, string $branchId, string $name): array
+    {
+        $token = $this->getAccessToken();
+        $endpoint = str_replace('{branch_id}', $branchId, config('platforms.careem.endpoints.branch_detail'));
+
+        Log::info('Creating/updating Careem branch', [
+            'brand_id' => $brandId,
+            'branch_id' => $branchId,
+            'name' => $name,
+        ]);
+
+        try {
+            $response = Http::timeout($this->timeout)
+                ->withToken($token)
+                ->withHeaders([
+                    'User-Agent' => 'Careem-Loyverse-Integration/1.0',
+                    'Brand-Id' => $brandId,
+                ])
+                ->put($this->baseUrl.$endpoint, [
+                    'name' => $name,
+                ]);
+
+            if (! $response->successful()) {
+                throw new PlatformApiException(
+                    'Careem',
+                    'Branch creation/update failed: '.$response->body(),
+                    $response->status()
+                );
+            }
+
+            Log::info('Careem branch created/updated successfully', [
+                'branch_id' => $branchId,
+                'status_code' => $response->status(),
+            ]);
+
+            return $response->json();
+
+        } catch (\Exception $e) {
+            Log::error('Careem branch creation/update failed', [
+                'branch_id' => $branchId,
+                'error' => $e->getMessage(),
+            ]);
+
+            throw $e;
+        }
+    }
+
+    /**
+     * Get branch details by ID
+     *
+     * @param  string  $brandId  Brand ID
+     * @param  string  $branchId  Branch ID
+     * @return array Branch details
+     *
+     * @throws PlatformApiException
+     */
+    public function getBranch(string $brandId, string $branchId): array
+    {
+        $token = $this->getAccessToken();
+        $endpoint = str_replace('{branch_id}', $branchId, config('platforms.careem.endpoints.branch_detail'));
+
+        try {
+            $response = Http::timeout($this->timeout)
+                ->withToken($token)
+                ->withHeaders([
+                    'User-Agent' => 'Careem-Loyverse-Integration/1.0',
+                    'Brand-Id' => $brandId,
+                ])
+                ->get($this->baseUrl.$endpoint);
+
+            if (! $response->successful()) {
+                throw new PlatformApiException(
+                    'Careem',
+                    'Failed to fetch branch: '.$response->body(),
+                    $response->status()
+                );
+            }
+
+            return $response->json();
+
+        } catch (\Exception $e) {
+            Log::error('Careem branch fetch failed', [
+                'branch_id' => $branchId,
+                'error' => $e->getMessage(),
+            ]);
+
+            throw $e;
+        }
+    }
+
+    /**
+     * List all branches for a brand with pagination
+     *
+     * @param  string  $brandId  Brand ID
+     * @param  int  $pageNumber  Page number (default: 1)
+     * @param  int  $pageSize  Results per page (default: 20, max: 20)
+     * @return array Paginated branch list
+     *
+     * @throws PlatformApiException
+     */
+    public function listBranches(string $brandId, int $pageNumber = 1, int $pageSize = 20): array
+    {
+        $token = $this->getAccessToken();
+        $endpoint = config('platforms.careem.endpoints.branches');
+
+        try {
+            $response = Http::timeout($this->timeout)
+                ->withToken($token)
+                ->withHeaders([
+                    'User-Agent' => 'Careem-Loyverse-Integration/1.0',
+                    'Brand-Id' => $brandId,
+                ])
+                ->get($this->baseUrl.$endpoint, [
+                    'page_number' => $pageNumber,
+                    'page_size' => min($pageSize, 20),
+                ]);
+
+            if (! $response->successful()) {
+                throw new PlatformApiException(
+                    'Careem',
+                    'Failed to list branches: '.$response->body(),
+                    $response->status()
+                );
+            }
+
+            return $response->json();
+
+        } catch (\Exception $e) {
+            Log::error('Careem branch list failed', [
+                'brand_id' => $brandId,
+                'error' => $e->getMessage(),
+            ]);
+
+            throw $e;
+        }
+    }
+
+    /**
+     * Delete branch
+     *
+     * @param  string  $brandId  Brand ID
+     * @param  string  $branchId  Branch ID
+     * @return array Deletion confirmation
+     *
+     * @throws PlatformApiException
+     */
+    public function deleteBranch(string $brandId, string $branchId): array
+    {
+        $token = $this->getAccessToken();
+        $endpoint = str_replace('{branch_id}', $branchId, config('platforms.careem.endpoints.branch_detail'));
+
+        Log::warning('Deleting Careem branch', [
+            'branch_id' => $branchId,
+        ]);
+
+        try {
+            $response = Http::timeout($this->timeout)
+                ->withToken($token)
+                ->withHeaders([
+                    'User-Agent' => 'Careem-Loyverse-Integration/1.0',
+                    'Brand-Id' => $brandId,
+                ])
+                ->delete($this->baseUrl.$endpoint);
+
+            if (! $response->successful()) {
+                throw new PlatformApiException(
+                    'Careem',
+                    'Branch deletion failed: '.$response->body(),
+                    $response->status()
+                );
+            }
+
+            Log::info('Careem branch deleted successfully', [
+                'branch_id' => $branchId,
+            ]);
+
+            return $response->json();
+
+        } catch (\Exception $e) {
+            Log::error('Careem branch deletion failed', [
+                'branch_id' => $branchId,
+                'error' => $e->getMessage(),
+            ]);
+
+            throw $e;
+        }
+    }
+
+    /**
+     * Toggle POS integration for a branch (enable/disable order flow)
+     *
+     * @param  string  $brandId  Brand ID
+     * @param  string  $branchId  Branch ID
+     * @param  bool  $active  true to enable POS integration, false to disable
+     * @return array Updated branch details
+     *
+     * @throws PlatformApiException
+     */
+    public function toggleBranchPosIntegration(string $brandId, string $branchId, bool $active): array
+    {
+        $token = $this->getAccessToken();
+        $endpoint = str_replace('{branch_id}', $branchId, config('platforms.careem.endpoints.branch_status'));
+
+        Log::info('Toggling branch POS integration', [
+            'branch_id' => $branchId,
+            'active' => $active,
+        ]);
+
+        try {
+            $response = Http::timeout($this->timeout)
+                ->withToken($token)
+                ->withHeaders([
+                    'User-Agent' => 'Careem-Loyverse-Integration/1.0',
+                    'Brand-Id' => $brandId,
+                ])
+                ->patch($this->baseUrl.$endpoint, [
+                    'active' => $active,
+                ]);
+
+            if (! $response->successful()) {
+                throw new PlatformApiException(
+                    'Careem',
+                    'Failed to toggle POS integration: '.$response->body(),
+                    $response->status()
+                );
+            }
+
+            Log::info('Branch POS integration toggled successfully', [
+                'branch_id' => $branchId,
+                'active' => $active,
+            ]);
+
+            return $response->json();
+
+        } catch (\Exception $e) {
+            Log::error('Branch POS integration toggle failed', [
+                'branch_id' => $branchId,
+                'error' => $e->getMessage(),
+            ]);
+
+            throw $e;
+        }
+    }
+
+    /**
+     * Update branch visibility status on SuperApp (active/inactive)
+     *
+     * @param  string  $brandId  Brand ID
+     * @param  string  $branchId  Branch ID
+     * @param  int  $statusId  1 = Active (customers can order), 2 = Inactive (cannot order)
+     * @return bool Success status (204 response means success)
+     *
+     * @throws PlatformApiException
+     */
+    public function updateBranchVisibilityStatus(string $brandId, string $branchId, int $statusId): bool
+    {
+        $token = $this->getAccessToken();
+        $endpoint = str_replace('{branch_id}', $branchId, config('platforms.careem.endpoints.branch_visibility'));
+
+        Log::info('Updating branch visibility status', [
+            'branch_id' => $branchId,
+            'status_id' => $statusId,
+        ]);
+
+        try {
+            $response = Http::timeout($this->timeout)
+                ->withToken($token)
+                ->withHeaders([
+                    'User-Agent' => 'Careem-Loyverse-Integration/1.0',
+                    'Brand-Id' => $brandId,
+                ])
+                ->post($this->baseUrl.$endpoint, [
+                    'status_id' => $statusId,
+                ]);
+
+            if (! $response->successful() && $response->status() !== 204) {
+                throw new PlatformApiException(
+                    'Careem',
+                    'Failed to update branch visibility: '.$response->body(),
+                    $response->status()
+                );
+            }
+
+            Log::info('Branch visibility status updated successfully', [
+                'branch_id' => $branchId,
+                'status_id' => $statusId,
+            ]);
+
+            return true;
+
+        } catch (\Exception $e) {
+            Log::error('Branch visibility status update failed', [
+                'branch_id' => $branchId,
+                'error' => $e->getMessage(),
+            ]);
+
+            throw $e;
+        }
+    }
+
+    /**
+     * Set branch status for a fixed duration (e.g., temporarily close for 15 minutes)
+     *
+     * @param  string  $brandId  Brand ID
+     * @param  string  $branchId  Branch ID
+     * @param  int  $statusId  Status ID (2 = Inactive)
+     * @param  int  $tillTimeMinutes  Duration in minutes
+     * @return array Expiry details
+     *
+     * @throws PlatformApiException
+     */
+    public function setBranchStatusExpiry(string $brandId, string $branchId, int $statusId, int $tillTimeMinutes): array
+    {
+        $token = $this->getAccessToken();
+        $endpoint = str_replace('{branch_id}', $branchId, config('platforms.careem.endpoints.branch_visibility_expiry'));
+
+        Log::info('Setting branch status expiry', [
+            'branch_id' => $branchId,
+            'status_id' => $statusId,
+            'till_time' => $tillTimeMinutes,
+        ]);
+
+        try {
+            $response = Http::timeout($this->timeout)
+                ->withToken($token)
+                ->withHeaders([
+                    'User-Agent' => 'Careem-Loyverse-Integration/1.0',
+                    'Brand-Id' => $brandId,
+                ])
+                ->post($this->baseUrl.$endpoint, [
+                    'status_id' => $statusId,
+                    'till_time' => $tillTimeMinutes,
+                ]);
+
+            if (! $response->successful()) {
+                throw new PlatformApiException(
+                    'Careem',
+                    'Failed to set branch status expiry: '.$response->body(),
+                    $response->status()
+                );
+            }
+
+            Log::info('Branch status expiry set successfully', [
+                'branch_id' => $branchId,
+            ]);
+
+            return $response->json();
+
+        } catch (\Exception $e) {
+            Log::error('Branch status expiry setting failed', [
+                'branch_id' => $branchId,
+                'error' => $e->getMessage(),
+            ]);
+
+            throw $e;
+        }
+    }
+
+    /**
+     * Set branch operational hours
+     *
+     * @param  string  $brandId  Brand ID
+     * @param  string  $branchId  Branch ID
+     * @param  array  $operationalHours  Array of operational hours
+     * @return array Operational hours response
+     *
+     * @throws PlatformApiException
+     */
+    public function setBranchOperationalHours(string $brandId, string $branchId, array $operationalHours): array
+    {
+        $token = $this->getAccessToken();
+        $endpoint = config('platforms.careem.endpoints.operational_hours');
+
+        Log::info('Setting branch operational hours', [
+            'branch_id' => $branchId,
+        ]);
+
+        try {
+            $response = Http::timeout($this->timeout)
+                ->withToken($token)
+                ->withHeaders([
+                    'User-Agent' => 'Careem-Loyverse-Integration/1.0',
+                    'Brand-Id' => $brandId,
+                    'Branch-Id' => $branchId,
+                ])
+                ->put($this->baseUrl.$endpoint, [
+                    'operational_hours' => $operationalHours,
+                ]);
+
+            if (! $response->successful()) {
+                throw new PlatformApiException(
+                    'Careem',
+                    'Failed to set operational hours: '.$response->body(),
+                    $response->status()
+                );
+            }
+
+            Log::info('Branch operational hours set successfully', [
+                'branch_id' => $branchId,
+            ]);
+
+            return $response->json();
+
+        } catch (\Exception $e) {
+            Log::error('Branch operational hours setting failed', [
+                'branch_id' => $branchId,
+                'error' => $e->getMessage(),
+            ]);
+
+            throw $e;
+        }
+    }
+
+    /**
+     * Get branch operational hours
+     *
+     * @param  string  $brandId  Brand ID
+     * @param  string  $branchId  Branch ID
+     * @return array Operational hours
+     *
+     * @throws PlatformApiException
+     */
+    public function getBranchOperationalHours(string $brandId, string $branchId): array
+    {
+        $token = $this->getAccessToken();
+        $endpoint = config('platforms.careem.endpoints.operational_hours');
+
+        try {
+            $response = Http::timeout($this->timeout)
+                ->withToken($token)
+                ->withHeaders([
+                    'User-Agent' => 'Careem-Loyverse-Integration/1.0',
+                    'Brand-Id' => $brandId,
+                    'Branch-Id' => $branchId,
+                ])
+                ->get($this->baseUrl.$endpoint);
+
+            if (! $response->successful()) {
+                throw new PlatformApiException(
+                    'Careem',
+                    'Failed to fetch operational hours: '.$response->body(),
+                    $response->status()
+                );
+            }
+
+            return $response->json();
+
+        } catch (\Exception $e) {
+            Log::error('Branch operational hours fetch failed', [
+                'branch_id' => $branchId,
+                'error' => $e->getMessage(),
+            ]);
+
+            throw $e;
+        }
+    }
 }

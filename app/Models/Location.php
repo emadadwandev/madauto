@@ -98,6 +98,14 @@ class Location extends Model
     }
 
     /**
+     * Get the Careem branch associated with this location
+     */
+    public function careemBranch()
+    {
+        return $this->hasOne(\App\Models\CareemBranch::class);
+    }
+
+    /**
      * Check if location supports a platform.
      */
     public function supportsPlatform(string $platform): bool

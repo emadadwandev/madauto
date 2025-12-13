@@ -49,6 +49,30 @@
                         </x-dropdown>
                     </div>
 
+                    <!-- Careem Integration Dropdown -->
+                    <div class="hidden sm:flex sm:items-center">
+                        <x-dropdown align="left" width="48">
+                            <x-slot name="trigger">
+                                <button class="inline-flex items-center px-1 pt-1 border-b-2 {{ request()->routeIs('dashboard.careem-brands.*') || request()->routeIs('dashboard.careem-branches.*') ? 'border-indigo-400 text-gray-900' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300' }} text-sm font-medium leading-5 focus:outline-none transition duration-150 ease-in-out">
+                                    <div>{{ __('Careem') }}</div>
+                                    <div class="ms-1">
+                                        <svg class="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+                                            <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
+                                        </svg>
+                                    </div>
+                                </button>
+                            </x-slot>
+                            <x-slot name="content">
+                                <x-dropdown-link :href="route('dashboard.careem-brands.index', ['subdomain' => request()->route('subdomain')])">
+                                    {{ __('Brands') }}
+                                </x-dropdown-link>
+                                <x-dropdown-link :href="route('dashboard.careem-branches.index', ['subdomain' => request()->route('subdomain')])">
+                                    {{ __('Branches') }}
+                                </x-dropdown-link>
+                            </x-slot>
+                        </x-dropdown>
+                    </div>
+
                     <x-nav-link :href="route('dashboard.team.index', ['subdomain' => request()->route('subdomain')])" :active="request()->routeIs('dashboard.team.*')">
                         {{ __('Team') }}
                     </x-nav-link>
@@ -140,11 +164,46 @@
             <x-responsive-nav-link :href="route('orders.index', ['subdomain' => request()->route('subdomain')])" :active="request()->routeIs('orders.*')">
                 {{ __('Orders') }}
             </x-responsive-nav-link>
+
+            <!-- Menu Management (Mobile) -->
+            <div class="border-t border-gray-200 pt-2 pb-2">
+                <div class="px-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Menu Management</div>
+                <x-responsive-nav-link :href="route('dashboard.locations.index', ['subdomain' => request()->route('subdomain')])" :active="request()->routeIs('dashboard.locations.*')">
+                    {{ __('Locations') }}
+                </x-responsive-nav-link>
+                <x-responsive-nav-link :href="route('dashboard.menus.index', ['subdomain' => request()->route('subdomain')])" :active="request()->routeIs('dashboard.menus.*')">
+                    {{ __('Menus') }}
+                </x-responsive-nav-link>
+                <x-responsive-nav-link :href="route('dashboard.modifiers.index', ['subdomain' => request()->route('subdomain')])" :active="request()->routeIs('dashboard.modifiers.*')">
+                    {{ __('Modifiers') }}
+                </x-responsive-nav-link>
+                <x-responsive-nav-link :href="route('dashboard.modifier-groups.index', ['subdomain' => request()->route('subdomain')])" :active="request()->routeIs('dashboard.modifier-groups.*')">
+                    {{ __('Modifier Groups') }}
+                </x-responsive-nav-link>
+            </div>
+
+            <!-- Careem Integration (Mobile) -->
+            <div class="border-t border-gray-200 pt-2 pb-2">
+                <div class="px-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Careem</div>
+                <x-responsive-nav-link :href="route('dashboard.careem-brands.index', ['subdomain' => request()->route('subdomain')])" :active="request()->routeIs('dashboard.careem-brands.*')">
+                    {{ __('Brands') }}
+                </x-responsive-nav-link>
+                <x-responsive-nav-link :href="route('dashboard.careem-branches.index', ['subdomain' => request()->route('subdomain')])" :active="request()->routeIs('dashboard.careem-branches.*')">
+                    {{ __('Branches') }}
+                </x-responsive-nav-link>
+            </div>
+
+            <x-responsive-nav-link :href="route('dashboard.team.index', ['subdomain' => request()->route('subdomain')])" :active="request()->routeIs('dashboard.team.*')">
+                {{ __('Team') }}
+            </x-responsive-nav-link>
             <x-responsive-nav-link :href="route('product-mappings.index', ['subdomain' => request()->route('subdomain')])" :active="request()->routeIs('product-mappings.*')">
                 {{ __('Product Mappings') }}
             </x-responsive-nav-link>
             <x-responsive-nav-link :href="route('sync-logs.index', ['subdomain' => request()->route('subdomain')])" :active="request()->routeIs('sync-logs.*')">
                 {{ __('Sync Logs') }}
+            </x-responsive-nav-link>
+            <x-responsive-nav-link :href="route('dashboard.notifications.show', ['subdomain' => request()->route('subdomain')])" :active="request()->routeIs('dashboard.notifications.*')">
+                {{ __('Notifications') }}
             </x-responsive-nav-link>
             <x-responsive-nav-link :href="route('api-credentials.index', ['subdomain' => request()->route('subdomain')])" :active="request()->routeIs('api-credentials.*')">
                 {{ __('Settings') }}

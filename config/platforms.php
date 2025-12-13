@@ -20,7 +20,7 @@ return [
 
     'careem' => [
         'enabled' => env('CAREEM_CATALOG_ENABLED', true),
-        'api_url' => env('CAREEM_API_URL', 'https://pos-stg.careemdash-internal.com'),
+        'api_url' => env('CAREEM_API_URL', 'https://apigateway-stg.careemdash.com/pos/api/v1'),
         'auth' => [
             'type' => 'oauth2_client_credentials',
             'token_url' => env('CAREEM_TOKEN_URL', 'https://identity.qa.careem-engineering.com/token'),
@@ -30,15 +30,30 @@ return [
             'scope' => env('CAREEM_SCOPE', 'pos'),
         ],
         'endpoints' => [
-            // Catalog API
-            'catalog' => '/v1/catalog',  // TODO: Verify with official docs
-            'menu' => '/v1/menu',
-            'items' => '/v1/items',
+            // Brand API
+            'brands' => '/brands',
+            'brand_detail' => '/brands/{brand_id}',
 
-            // Store API (for location management)
-            'store' => '/stores/{storeId}',  // TODO: Verify with official docs
-            'store_status' => '/stores/{storeId}/status',  // TODO: Verify with official docs
-            'store_hours' => '/stores/{storeId}/hours',  // TODO: Verify with official docs
+            // Branch API
+            'branches' => '/branches',
+            'branch_detail' => '/branches/{branch_id}',
+            'branch_status' => '/branches/{branch_id}/status',  // Toggle POS integration
+            'branch_visibility' => '/branches/{branch_id}/visibility/status',  // Online/offline
+            'branch_visibility_expiry' => '/branches/{branch_id}/visibility/status/expiries',
+
+            // Catalog API
+            'catalogs' => '/catalogs',
+            'catalog_status' => '/catalogs/status/{request_id}',
+            'catalog_items' => '/catalogs/{catalog_id}/items',
+
+            // Operational Hours API
+            'operational_hours' => '/operational-hours',
+
+            // Order API
+            'orders' => '/orders',
+            'order_detail' => '/orders/{order_id}',
+            'order_delay' => '/orders/{order_id}/delay-request',
+            'order_tags' => '/orders/{order_id}/tags',
         ],
         'sync' => [
             'timeout' => 30,  // seconds

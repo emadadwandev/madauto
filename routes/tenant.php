@@ -297,6 +297,39 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('/{location}/sync-hours', [LocationController::class, 'syncHours'])->name('sync-hours');
     });
 
+    // Careem Brand Management
+    Route::prefix('dashboard/careem-brands')->name('dashboard.careem-brands.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Dashboard\CareemBrandController::class, 'index'])->name('index');
+        Route::get('/create', [\App\Http\Controllers\Dashboard\CareemBrandController::class, 'create'])->name('create');
+        Route::post('/', [\App\Http\Controllers\Dashboard\CareemBrandController::class, 'store'])->name('store');
+        Route::get('/{careemBrand}/edit', [\App\Http\Controllers\Dashboard\CareemBrandController::class, 'edit'])->name('edit');
+        Route::put('/{careemBrand}', [\App\Http\Controllers\Dashboard\CareemBrandController::class, 'update'])->name('update');
+        Route::delete('/{careemBrand}', [\App\Http\Controllers\Dashboard\CareemBrandController::class, 'destroy'])->name('destroy');
+
+        // Careem API sync routes
+        Route::post('/{careemBrand}/sync', [\App\Http\Controllers\Dashboard\CareemBrandController::class, 'sync'])->name('sync');
+        Route::post('/{careemBrand}/fetch', [\App\Http\Controllers\Dashboard\CareemBrandController::class, 'fetchFromCareem'])->name('fetch');
+        Route::delete('/{careemBrand}/delete-from-careem', [\App\Http\Controllers\Dashboard\CareemBrandController::class, 'deleteFromCareem'])->name('delete-from-careem');
+    });
+
+    // Careem Branch Management
+    Route::prefix('dashboard/careem-branches')->name('dashboard.careem-branches.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Dashboard\CareemBranchController::class, 'index'])->name('index');
+        Route::get('/create', [\App\Http\Controllers\Dashboard\CareemBranchController::class, 'create'])->name('create');
+        Route::post('/', [\App\Http\Controllers\Dashboard\CareemBranchController::class, 'store'])->name('store');
+        Route::get('/{careemBranch}/edit', [\App\Http\Controllers\Dashboard\CareemBranchController::class, 'edit'])->name('edit');
+        Route::put('/{careemBranch}', [\App\Http\Controllers\Dashboard\CareemBranchController::class, 'update'])->name('update');
+        Route::delete('/{careemBranch}', [\App\Http\Controllers\Dashboard\CareemBranchController::class, 'destroy'])->name('destroy');
+
+        // Careem API sync routes
+        Route::post('/{careemBranch}/sync', [\App\Http\Controllers\Dashboard\CareemBranchController::class, 'sync'])->name('sync');
+        Route::post('/{careemBranch}/fetch', [\App\Http\Controllers\Dashboard\CareemBranchController::class, 'fetchFromCareem'])->name('fetch');
+        Route::post('/{careemBranch}/toggle-pos', [\App\Http\Controllers\Dashboard\CareemBranchController::class, 'togglePosIntegration'])->name('toggle-pos');
+        Route::post('/{careemBranch}/update-visibility', [\App\Http\Controllers\Dashboard\CareemBranchController::class, 'updateVisibility'])->name('update-visibility');
+        Route::post('/{careemBranch}/temporary-status', [\App\Http\Controllers\Dashboard\CareemBranchController::class, 'setTemporaryStatus'])->name('temporary-status');
+        Route::delete('/{careemBranch}/delete-from-careem', [\App\Http\Controllers\Dashboard\CareemBranchController::class, 'deleteFromCareem'])->name('delete-from-careem');
+    });
+
     // Product Mappings
     Route::prefix('product-mappings')->name('product-mappings.')->group(function () {
         Route::get('/', [ProductMappingController::class, 'index'])->name('index');

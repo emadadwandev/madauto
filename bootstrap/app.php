@@ -7,6 +7,8 @@ use Illuminate\Support\Facades\Route;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
+        // Auth routes (available on ALL domains)
+        web: __DIR__.'/../routes/auth.php',
         // API routes (no domain restriction)
         api: __DIR__.'/../routes/api.php',
         commands: __DIR__.'/../routes/console.php',
@@ -18,12 +20,7 @@ return Application::configure(basePath: dirname(__DIR__))
             // Super Admin Routes - admin.localhost (ONLY)
             Route::domain("{$adminSubdomain}.{$domain}")
                 ->middleware('web')
-                ->group(function () {
-                    // Include auth routes for super admin domain
-                    require base_path('routes/auth.php');
-                    // Include super admin specific routes
-                    require base_path('routes/super-admin.php');
-                });
+                ->group(base_path('routes/super-admin.php'));
 
             // Public/Landing Routes - main domain and www (NO tenant subdomains, NO admin)
             Route::domain($domain)
