@@ -59,6 +59,20 @@ class SyncMenuToPlatformJob implements ShouldQueue
             'attempt' => $this->attempts(),
         ]);
 
+        // Create initial sync log
+        $syncLog = \App\Models\MenuSyncLog::create([
+            'tenant_id' => $this->tenantId,
+            'menu_id' => $this->menu->id,
+            'platform' => $this->platform,
+            'action' => 'sync_started',
+            'status' => 'pending',
+            'message' => 'Menu sync started',
+            'metadata' => [
+                'attempt' => $this->attempts(),
+                'queue' => $this->queue,
+            ],
+        ]);
+
         // Update sync status to 'syncing'
         $this->updatePlatformStatus('syncing', null, null);
 
@@ -66,6 +80,9 @@ class SyncMenuToPlatformJob implements ShouldQueue
             // Reload menu with all necessary relationships
             $menu = Menu::with(['items.modifierGroups.modifiers', 'locations'])
                 ->findOrFail($this->menu->id);
+
+            // Update log to processing
+            $syncLog->update(['status' => 'processing']);
 
             // Sync based on platform
             $result = match ($this->platform) {
@@ -82,6 +99,21 @@ class SyncMenuToPlatformJob implements ShouldQueue
                     null
                 );
 
+                // Update sync log to success
+                $syncLog->update([
+                    'status' => 'success',
+                    'action' => 'sync_completed',
+                    'message' => $result['message'] ?? 'Menu synced successfully',
+                    'metadata' => array_merge($syncLog->metadata ?? [], [
+                        'platform_menu_id' => $result['platform_menu_id'] ?? null,
+                        'catalog_id' => $result['catalog_id'] ?? null,
+                        'request_id' => $result['request_id'] ?? null,
+                        'api_response' => $result['api_response'] ?? null,
+                        'status_check_response' => $result['status_response'] ?? null,
+                        'result' => $result,
+                    ]),
+                ]);
+
                 Log::info('Menu synced successfully to platform', [
                     'menu_id' => $this->menu->id,
                     'platform' => $this->platform,
@@ -95,6 +127,20 @@ class SyncMenuToPlatformJob implements ShouldQueue
             }
 
         } catch (PlatformApiException $e) {
+            // Update sync log to failed
+            $syncLog->update([
+                'status' => 'failed',
+                'action' => 'sync_failed',
+                'message' => $e->getMessage(),
+                'metadata' => array_merge($syncLog->metadata ?? [], [
+                    'error' => $e->getMessage(),
+                    'error_code' => $e->getCode(),
+                    'is_retryable' => $e->isRetryable(),
+                    'api_response' => $e->getResponse() ?? null,
+                    'trace' => $e->getTraceAsString(),
+                ]),
+            ]);
+
             $this->handleFailure($e);
 
             // Re-throw for retry logic if retryable
@@ -102,6 +148,20 @@ class SyncMenuToPlatformJob implements ShouldQueue
                 throw $e;
             }
         } catch (\Exception $e) {
+            // Update sync log to failed
+            $syncLog->update([
+                'status' => 'failed',
+                'action' => 'sync_failed',
+                'message' => $e->getMessage(),
+                'metadata' => array_merge($syncLog->metadata ?? [], [
+                    'error' => $e->getMessage(),
+                    'error_type' => get_class($e),
+                    'error_file' => $e->getFile(),
+                    'error_line' => $e->getLine(),
+                    'trace' => $e->getTraceAsString(),
+                ]),
+            ]);
+
             $this->handleFailure($e);
 
             // Re-throw for retry logic
@@ -143,8 +203,26 @@ class SyncMenuToPlatformJob implements ShouldQueue
         // Transform menu to Careem format with catalogId
         $catalogData = $transformer->transform($menu, $catalogId);
 
+        // Log the request payload
+        Log::info('Submitting catalog to Careem', [
+            'menu_id' => $menu->id,
+            'catalog_id' => $catalogId,
+            'brand_id' => $brandId,
+            'branch_id' => $branchId,
+            'payload_size' => strlen(json_encode($catalogData)),
+            'items_count' => count($catalogData['items'] ?? []),
+            'categories_count' => count($catalogData['categories'] ?? []),
+        ]);
+
         // Submit to Careem
         $result = $apiService->submitCatalog($catalogData, $brandId, $branchId, $catalogId);
+
+        // Log the API response
+        Log::info('Careem API response received', [
+            'menu_id' => $menu->id,
+            'catalog_id' => $catalogId,
+            'result' => $result,
+        ]);
 
         // Store request_id for status checking
         $requestId = $result['data']['request_id'] ?? $result['catalog_id'] ?? null;
@@ -170,6 +248,10 @@ class SyncMenuToPlatformJob implements ShouldQueue
                         'platform_menu_id' => $requestId,
                         'message' => 'Catalog submitted, processing by Careem (Status: ' . $status . ')',
                         'status' => 'processing',
+                        'api_response' => $result,
+                        'status_response' => $statusResult,
+                        'catalog_id' => $catalogId,
+                        'request_id' => $requestId,
                     ];
                 }
 
@@ -179,12 +261,22 @@ class SyncMenuToPlatformJob implements ShouldQueue
                         'success' => true,
                         'platform_menu_id' => $requestId,
                         'message' => 'Catalog accepted by Careem',
+                        'api_response' => $result,
+                        'status_response' => $statusResult,
+                        'catalog_id' => $catalogId,
+                        'request_id' => $requestId,
                     ];
                 }
 
                 // If rejected, mark as failed
                 if ($status === 'rejected') {
-                    throw new \Exception('Catalog rejected by Careem: ' . ($statusResult['message'] ?? 'Unknown reason'));
+                    $errorMessage = 'Catalog rejected by Careem: ' . ($statusResult['message'] ?? 'Unknown reason');
+                    Log::error('Careem catalog rejected', [
+                        'request_id' => $requestId,
+                        'status_result' => $statusResult,
+                        'submit_result' => $result,
+                    ]);
+                    throw new \Exception($errorMessage);
                 }
 
             } catch (\Exception $e) {

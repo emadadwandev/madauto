@@ -14,6 +14,8 @@ class PlatformApiException extends Exception
 
     protected ?int $statusCode;
 
+    protected ?array $response = null;
+
     /**
      * Create a new Platform API exception
      *
@@ -34,6 +36,22 @@ class PlatformApiException extends Exception
         $fullMessage = "[{$platform} API] {$message}";
 
         parent::__construct($fullMessage, $statusCode ?? 0, $previous);
+    }
+
+    /**
+     * Set the full API response for logging purposes
+     */
+    public function setResponse(?array $response): void
+    {
+        $this->response = $response;
+    }
+
+    /**
+     * Get the full API response
+     */
+    public function getResponse(): ?array
+    {
+        return $this->response;
     }
 
     /**

@@ -206,6 +206,8 @@ class CareemApiService
                     'catalog_id' => $result['catalog_id'] ?? $result['id'] ?? null,
                     'brand_id' => $brandId,
                     'branch_id' => $branchId,
+                    'status_code' => $response->status(),
+                    'response_body' => $result,
                 ]);
 
                 return [
@@ -214,6 +216,8 @@ class CareemApiService
                     'catalog_id' => $result['catalog_id'] ?? $result['id'] ?? null,
                     'message' => 'Catalog submitted successfully.',
                     'data' => $result,
+                    'http_status' => $response->status(),
+                    'raw_response' => $result,
                 ];
             }
 
@@ -222,16 +226,26 @@ class CareemApiService
 
             Log::error('Careem catalog submission failed', [
                 'status' => $response->status(),
+                'status_text' => $response->reason(),
                 'error' => $errorBody,
+                'raw_body' => $response->body(),
                 'brand_id' => $brandId,
                 'branch_id' => $branchId,
+                'headers_sent' => $headers,
+                'url' => $url,
             ]);
 
-            throw new PlatformApiException(
+            $exception = new PlatformApiException(
                 'Careem',
                 'Catalog submission failed: '.($errorBody['message'] ?? $response->body()),
                 $response->status()
             );
+            $exception->setResponse([
+                'status' => $response->status(),
+                'body' => $errorBody,
+                'raw_body' => $response->body(),
+            ]);
+            throw $exception;
 
         } catch (PlatformApiException $e) {
             throw $e;

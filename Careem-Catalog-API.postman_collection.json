@@ -1,0 +1,525 @@
+{
+	"info": {
+		"_postman_id": "careem-catalog-api-2025",
+		"name": "Careem Catalog API - Testing",
+		"description": "Complete collection for testing Careem Catalog API integration.\n\nBefore using:\n1. Set up environment variables (see Variables tab)\n2. Run \"1. Get Access Token\" first to authenticate\n3. Then run other requests as needed\n\nThe access token is automatically saved to environment variables.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Authentication",
+			"item": [
+				{
+					"name": "1. Get Access Token",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// Save access token to environment",
+									"var jsonData = pm.response.json();",
+									"",
+									"if (jsonData.access_token) {",
+									"    pm.environment.set(\"access_token\", jsonData.access_token);",
+									"    pm.environment.set(\"token_expires_at\", Date.now() + (jsonData.expires_in * 1000));",
+									"    console.log(\"✅ Access token saved successfully\");",
+									"    console.log(\"Token expires in: \" + jsonData.expires_in + \" seconds\");",
+									"} else {",
+									"    console.error(\"❌ No access token in response\");",
+									"}",
+									"",
+									"// Test for successful response",
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Response has access_token\", function () {",
+									"    pm.expect(jsonData).to.have.property('access_token');",
+									"});",
+									"",
+									"pm.test(\"Token type is Bearer\", function () {",
+									"    pm.expect(jsonData.token_type).to.equal('Bearer');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"// Check if required variables are set",
+									"const clientId = pm.environment.get(\"client_id\");",
+									"const clientSecret = pm.environment.get(\"client_secret\");",
+									"",
+									"if (!clientId || !clientSecret) {",
+									"    console.error(\"❌ Missing credentials!\");",
+									"    console.log(\"Please set client_id and client_secret in environment variables\");",
+									"} else {",
+									"    console.log(\"✅ Credentials found\");",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/x-www-form-urlencoded"
+							}
+						],
+						"body": {
+							"mode": "urlencoded",
+							"urlencoded": [
+								{
+									"key": "grant_type",
+									"value": "client_credentials",
+									"type": "text"
+								},
+								{
+									"key": "client_id",
+									"value": "{{client_id}}",
+									"type": "text"
+								},
+								{
+									"key": "client_secret",
+									"value": "{{client_secret}}",
+									"type": "text"
+								},
+								{
+									"key": "scope",
+									"value": "pos",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{token_url}}",
+							"host": [
+								"{{token_url}}"
+							]
+						},
+						"description": "Get OAuth2 access token using client credentials.\n\nThis token is valid for 60 minutes and will be automatically saved to environment variables for use in other requests."
+					},
+					"response": []
+				},
+				{
+					"name": "Check Token Status",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"const token = pm.environment.get(\"access_token\");",
+									"const expiresAt = pm.environment.get(\"token_expires_at\");",
+									"",
+									"if (!token) {",
+									"    console.error(\"❌ No access token found. Run 'Get Access Token' first.\");",
+									"} else if (expiresAt && Date.now() > expiresAt) {",
+									"    console.error(\"⚠️ Token has expired. Get a new token.\");",
+									"} else {",
+									"    console.log(\"✅ Token is valid\");",
+									"    if (expiresAt) {",
+									"        const remainingMinutes = Math.floor((expiresAt - Date.now()) / 60000);",
+									"        console.log(\"Token valid for \" + remainingMinutes + \" more minutes\");",
+									"    }",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "https://postman-echo.com/get?token_status=valid",
+							"protocol": "https",
+							"host": [
+								"postman-echo",
+								"com"
+							],
+							"path": [
+								"get"
+							],
+							"query": [
+								{
+									"key": "token_status",
+									"value": "valid"
+								}
+							]
+						},
+						"description": "Check if your access token is still valid. This is a helper request that checks the token_expires_at variable."
+					},
+					"response": []
+				}
+			],
+			"description": "Authentication endpoints for obtaining and managing OAuth2 access tokens."
+		},
+		{
+			"name": "Catalog Management",
+			"item": [
+				{
+					"name": "2. Submit Catalog (PUT)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var jsonData = pm.response.json();",
+									"",
+									"// Save request_id if present",
+									"if (jsonData.request_id) {",
+									"    pm.environment.set(\"last_request_id\", jsonData.request_id);",
+									"    console.log(\"✅ Request ID saved: \" + jsonData.request_id);",
+									"}",
+									"",
+									"// Tests",
+									"pm.test(\"Status code is 200 or 202\", function () {",
+									"    pm.expect(pm.response.code).to.be.oneOf([200, 202]);",
+									"});",
+									"",
+									"pm.test(\"Response has status field\", function () {",
+									"    pm.expect(jsonData).to.have.property('status');",
+									"});",
+									"",
+									"// Log response details",
+									"console.log(\"Status: \" + jsonData.status);",
+									"console.log(\"Message: \" + (jsonData.message || 'N/A'));",
+									"",
+									"if (jsonData.status === 'accepted') {",
+									"    console.log(\"✅ Catalog accepted!\");",
+									"} else if (jsonData.status === 'processing') {",
+									"    console.log(\"⏳ Catalog is processing. Check status later.\");",
+									"} else if (jsonData.status === 'rejected') {",
+									"    console.error(\"❌ Catalog rejected: \" + jsonData.message);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"// Validate required variables",
+									"const token = pm.environment.get(\"access_token\");",
+									"const brandId = pm.environment.get(\"brand_id\");",
+									"const branchId = pm.environment.get(\"branch_id\");",
+									"const catalogId = pm.environment.get(\"catalog_id\");",
+									"",
+									"let missing = [];",
+									"if (!token) missing.push('access_token');",
+									"if (!brandId) missing.push('brand_id');",
+									"if (!branchId) missing.push('branch_id');",
+									"if (!catalogId) missing.push('catalog_id');",
+									"",
+									"if (missing.length > 0) {",
+									"    console.error(\"❌ Missing required variables: \" + missing.join(', '));",
+									"    console.log(\"Set these in your environment variables\");",
+									"} else {",
+									"    console.log(\"✅ All required variables present\");",
+									"    console.log(\"Submitting to Catalog ID: \" + catalogId);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "User-Agent",
+								"value": "{{user_agent}}",
+								"type": "text"
+							},
+							{
+								"key": "Brand-Id",
+								"value": "{{brand_id}}",
+								"type": "text"
+							},
+							{
+								"key": "Branch-Id",
+								"value": "{{branch_id}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"diff\": false,\n  \"catalog\": {\n    \"id\": \"{{catalog_id}}\"\n  },\n  \"categories\": [\n    {\n      \"category_id\": \"cat_1\",\n      \"title\": \"Main Dishes\"\n    },\n    {\n      \"category_id\": \"cat_2\",\n      \"title\": \"Beverages\"\n    }\n  ],\n  \"sub_categories\": [],\n  \"items\": [\n    {\n      \"item_id\": \"item_1\",\n      \"title\": \"Classic Burger\",\n      \"description\": \"Delicious beef burger with lettuce and tomato\",\n      \"price\": 25.00,\n      \"currency\": \"AED\",\n      \"category_id\": \"cat_1\",\n      \"available\": true,\n      \"group_ids\": [\"group_1\"]\n    },\n    {\n      \"item_id\": \"item_2\",\n      \"title\": \"Chicken Burger\",\n      \"description\": \"Grilled chicken burger with special sauce\",\n      \"price\": 22.00,\n      \"currency\": \"AED\",\n      \"category_id\": \"cat_1\",\n      \"available\": true,\n      \"group_ids\": []\n    },\n    {\n      \"item_id\": \"item_3\",\n      \"title\": \"Coca Cola\",\n      \"description\": \"Refreshing cola drink\",\n      \"price\": 5.00,\n      \"currency\": \"AED\",\n      \"category_id\": \"cat_2\",\n      \"available\": true,\n      \"group_ids\": []\n    }\n  ],\n  \"groups\": [\n    {\n      \"group_id\": \"group_1\",\n      \"title\": \"Choose Your Extras\",\n      \"description\": \"Select additional toppings\",\n      \"max_selection\": 3,\n      \"min_selection\": 0,\n      \"option_ids\": [\"opt_1\", \"opt_2\", \"opt_3\"]\n    }\n  ],\n  \"options\": [\n    {\n      \"option_id\": \"opt_1\",\n      \"title\": \"Extra Cheese\",\n      \"price\": 3.00,\n      \"currency\": \"AED\"\n    },\n    {\n      \"option_id\": \"opt_2\",\n      \"title\": \"Bacon\",\n      \"price\": 5.00,\n      \"currency\": \"AED\"\n    },\n    {\n      \"option_id\": \"opt_3\",\n      \"title\": \"Avocado\",\n      \"price\": 4.00,\n      \"currency\": \"AED\"\n    }\n  ]\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/catalogs/{{catalog_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"catalogs",
+								"{{catalog_id}}"
+							]
+						},
+						"description": "Submit a catalog to Careem using PUT method.\n\nRequired Headers:\n- Authorization: Bearer token\n- Brand-Id: Your brand ID from Careem\n- Branch-Id: Your branch ID from Careem\n- User-Agent: Your application identifier\n\nThe catalog payload includes:\n- categories: Menu categories\n- items: Menu items with prices\n- groups: Modifier groups\n- options: Modifier options\n\nAll prices must be in AED currency."
+					},
+					"response": []
+				},
+				{
+					"name": "3. Check Catalog Status",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var jsonData = pm.response.json();",
+									"",
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Response has status field\", function () {",
+									"    pm.expect(jsonData).to.have.property('status');",
+									"});",
+									"",
+									"// Log status",
+									"console.log(\"Catalog Status: \" + jsonData.status);",
+									"console.log(\"Request ID: \" + jsonData.request_id);",
+									"",
+									"if (jsonData.status === 'accepted') {",
+									"    console.log(\"✅ Catalog has been accepted by Careem\");",
+									"} else if (jsonData.status === 'processing') {",
+									"    console.log(\"⏳ Still processing... check again later\");",
+									"} else if (jsonData.status === 'rejected') {",
+									"    console.error(\"❌ Catalog was rejected\");",
+									"    console.error(\"Reason: \" + (jsonData.message || 'Unknown'));",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"const requestId = pm.environment.get(\"last_request_id\");",
+									"",
+									"if (!requestId) {",
+									"    console.error(\"❌ No request_id found.\");",
+									"    console.log(\"Submit a catalog first or manually set 'last_request_id' in environment\");",
+									"} else {",
+									"    console.log(\"Checking status for request: \" + requestId);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}",
+								"type": "text"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/catalogs/status/{{last_request_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"catalogs",
+								"status",
+								"{{last_request_id}}"
+							]
+						},
+						"description": "Check the processing status of a previously submitted catalog.\n\nUses the request_id returned from the catalog submission.\n\nPossible statuses:\n- pending: Awaiting processing\n- processing: Currently being processed\n- accepted: Successfully processed and live\n- rejected: Processing failed (check message for reason)"
+					},
+					"response": []
+				}
+			],
+			"description": "Endpoints for managing catalog submissions and checking their status."
+		},
+		{
+			"name": "Brands & Branches",
+			"item": [
+				{
+					"name": "Get All Brands",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var jsonData = pm.response.json();",
+									"",
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"// Log brands",
+									"if (Array.isArray(jsonData)) {",
+									"    console.log(\"Found \" + jsonData.length + \" brands\");",
+									"    jsonData.forEach(function(brand) {",
+									"        console.log(\"- \" + brand.name + \" (ID: \" + brand.id + \")\");",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}",
+								"type": "text"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/brands",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"brands"
+							]
+						},
+						"description": "Retrieve all brands associated with your account."
+					},
+					"response": []
+				},
+				{
+					"name": "Get All Branches",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var jsonData = pm.response.json();",
+									"",
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"// Log branches",
+									"if (Array.isArray(jsonData)) {",
+									"    console.log(\"Found \" + jsonData.length + \" branches\");",
+									"    jsonData.forEach(function(branch) {",
+									"        console.log(\"- \" + branch.name + \" (ID: \" + branch.id + \", Brand: \" + branch.brand_id + \")\");",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}",
+								"type": "text"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/branches",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"branches"
+							]
+						},
+						"description": "Retrieve all branches across all brands."
+					},
+					"response": []
+				}
+			],
+			"description": "Endpoints for retrieving brand and branch information."
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					"// Global pre-request script",
+					"console.log(\"=== Careem API Request ===\");",
+					"console.log(\"Environment: \" + pm.environment.name);",
+					"console.log(\"Request: \" + pm.info.requestName);"
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					"// Global test script",
+					"console.log(\"Response Status: \" + pm.response.code + \" \" + pm.response.status);",
+					"console.log(\"Response Time: \" + pm.response.responseTime + \"ms\");",
+					"console.log(\"======================\\n\");"
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "https://apigateway-stg.careemdash.com/pos/api/v1",
+			"type": "string"
+		},
+		{
+			"key": "token_url",
+			"value": "https://identity.qa.careem-engineering.com/token",
+			"type": "string"
+		},
+		{
+			"key": "user_agent",
+			"value": "loyverse-integration/1.0",
+			"type": "string"
+		}
+	]
+}

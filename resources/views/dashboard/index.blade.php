@@ -147,7 +147,8 @@
                             <div class="flex items-center justify-between border-l-4 {{ $log->status === 'success' ? 'border-green-500' : 'border-red-500' }} bg-gray-50 p-3 rounded">
                                 <div class="flex-1">
                                     <div class="flex items-center gap-2 mb-1">
-                                        @if($log->order)
+                                        @if($log->sync_type === 'order' && $log->order)
+                                            {{-- Order Sync --}}
                                             @if($log->order->platform === 'careem')
                                                 <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
                                                     Careem
@@ -157,10 +158,34 @@
                                                     Talabat
                                                 </span>
                                             @endif
+                                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800">
+                                                Order
+                                            </span>
+                                            <div class="text-sm font-medium text-gray-900">
+                                                {{ $log->order->careem_order_id ?? 'N/A' }}
+                                            </div>
+                                        @elseif($log->sync_type === 'menu' && $log->menu)
+                                            {{-- Menu Sync --}}
+                                            @if($log->platform === 'careem')
+                                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
+                                                    Careem
+                                                </span>
+                                            @elseif($log->platform === 'talabat')
+                                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-orange-100 text-orange-800">
+                                                    Talabat
+                                                </span>
+                                            @endif
+                                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-purple-100 text-purple-800">
+                                                Menu
+                                            </span>
+                                            <div class="text-sm font-medium text-gray-900">
+                                                {{ $log->menu->name }}
+                                            </div>
+                                            {{-- Status Badge for Menu Sync --}}
+                                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full {{ $log->status_badge_color }}">
+                                                {{ ucfirst($log->status) }}
+                                            </span>
                                         @endif
-                                        <div class="text-sm font-medium text-gray-900">
-                                            {{ $log->order->careem_order_id ?? 'N/A' }}
-                                        </div>
                                     </div>
                                     <div class="text-xs text-gray-500">{{ $log->message }}</div>
                                 </div>

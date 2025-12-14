@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Order;
 use App\Models\ProductMapping;
 use App\Models\SyncLog;
+use App\Models\MenuSyncLog;
 
 class DashboardController extends Controller
 {
@@ -28,11 +29,31 @@ class DashboardController extends Controller
             ->limit(10)
             ->get();
 
-        // Get recent sync logs
-        $recentLogs = SyncLog::with('order')
+        // Get recent order sync logs
+        $orderSyncLogs = SyncLog::with('order')
             ->latest()
-            ->limit(5)
-            ->get();
+            ->limit(10)
+            ->get()
+            ->map(function ($log) {
+                $log->sync_type = 'order';
+                return $log;
+            });
+
+        // Get recent menu sync logs
+        $menuSyncLogs = MenuSyncLog::with('menu')
+            ->latest()
+            ->limit(10)
+            ->get()
+            ->map(function ($log) {
+                $log->sync_type = 'menu';
+                return $log;
+            });
+
+        // Merge and sort by created_at, then take top 10
+        $recentLogs = $orderSyncLogs->concat($menuSyncLogs)
+            ->sortByDesc('created_at')
+            ->take(10)
+            ->values();
 
         return view('dashboard.index', compact('stats', 'recentOrders', 'recentLogs'));
     }
