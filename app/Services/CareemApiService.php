@@ -27,6 +27,8 @@ class CareemApiService
 
     protected string $scope;
 
+    protected string $userAgent;
+
     protected int $timeout;
 
     /**
@@ -54,11 +56,15 @@ class CareemApiService
             $this->clientName = $credentials['client_name'] ?? null;
             $this->baseUrl = $credentials['api_url'] ?? $this->baseUrl;
             $this->tokenUrl = $credentials['token_url'] ?? $this->tokenUrl;
+
+            // Store user_agent for tenant-specific identification (optional, falls back to config)
+            $this->userAgent = $credentials['user_agent'] ?? config('platforms.careem.user_agent', 'loyverse-integration/1.0');
         } else {
             // Fallback to .env only for development/testing (not recommended for production)
             $this->clientId = config('platforms.careem.auth.client_id');
             $this->clientSecret = config('platforms.careem.auth.client_secret');
             $this->clientName = config('platforms.careem.auth.client_name');
+            $this->userAgent = config('platforms.careem.user_agent', 'loyverse-integration/1.0');
 
             if (empty($this->clientId) || empty($this->clientSecret)) {
                 throw new \Exception('Careem API credentials not configured. Please configure tenant-specific credentials in Settings.');
@@ -153,38 +159,53 @@ class CareemApiService
      *
      * @throws PlatformApiException
      */
-    public function submitCatalog(array $catalogData, ?string $restaurantId = null): array
+    public function submitCatalog(array $catalogData, ?string $brandId = null, ?string $branchId = null, ?string $catalogId = null): array
     {
         $token = $this->getAccessToken();
-        $endpoint = config('platforms.careem.endpoints.catalog');
-        $url = $this->baseUrl.$endpoint;
-
-        // Add restaurant ID if provided
-        if ($restaurantId) {
-            $catalogData['restaurant_id'] = $restaurantId;
+        
+        // If catalogId provided, use it in URL path, otherwise use base endpoint
+        if ($catalogId) {
+            $url = $this->baseUrl . '/catalogs/' . $catalogId;
+        } else {
+            $endpoint = config('platforms.careem.endpoints.catalog');
+            $url = $this->baseUrl.$endpoint;
         }
 
         Log::info('Submitting catalog to Careem', [
-            'restaurant_id' => $restaurantId,
+            'catalog_id' => $catalogId,
+            'brand_id' => $brandId,
+            'branch_id' => $branchId,
             'categories_count' => count($catalogData['categories'] ?? []),
             'items_count' => count($catalogData['items'] ?? []),
         ]);
 
         try {
+            $headers = [
+                'Content-Type' => 'application/json',
+                'Accept' => 'application/json',
+                'User-Agent' => $this->userAgent,
+            ];
+
+            // Add Brand-Id and Branch-Id headers if provided
+            if ($brandId) {
+                $headers['Brand-Id'] = $brandId;
+            }
+            if ($branchId) {
+                $headers['Branch-Id'] = $branchId;
+            }
+
             $response = Http::timeout($this->timeout)
                 ->withToken($token)
-                ->withHeaders([
-                    'Content-Type' => 'application/json',
-                    'Accept' => 'application/json',
-                ])
-                ->post($url, $catalogData);
+                ->withHeaders($headers)
+                ->put($url, $catalogData);
 
             if ($response->successful()) {
                 $result = $response->json();
 
                 Log::info('Careem catalog submitted successfully', [
                     'catalog_id' => $result['catalog_id'] ?? $result['id'] ?? null,
-                    'restaurant_id' => $restaurantId,
+                    'brand_id' => $brandId,
+                    'branch_id' => $branchId,
                 ]);
 
                 return [
@@ -202,7 +223,8 @@ class CareemApiService
             Log::error('Careem catalog submission failed', [
                 'status' => $response->status(),
                 'error' => $errorBody,
-                'restaurant_id' => $restaurantId,
+                'brand_id' => $brandId,
+                'branch_id' => $branchId,
             ]);
 
             throw new PlatformApiException(
@@ -223,6 +245,92 @@ class CareemApiService
                 'Careem',
                 'API request failed: '.$e->getMessage()
             );
+        }
+    }
+
+    /**
+     * Get catalog sync status
+     *
+     * @param  string  $requestId  Request ID returned from catalog submission
+     * @return array Status information
+     *
+     * @throws PlatformApiException
+     */
+    public function getCatalogStatus(string $requestId): array
+    {
+        $token = $this->getAccessToken();
+        $endpoint = str_replace('{request_id}', $requestId, config('platforms.careem.endpoints.catalog_status'));
+        $url = $this->baseUrl.$endpoint;
+
+        try {
+            $response = Http::timeout($this->timeout)
+                ->withToken($token)
+                ->withHeaders([
+                    'User-Agent' => 'Careem-Loyverse-Integration/1.0',
+                ])
+                ->get($url);
+
+            if ($response->successful()) {
+                return $response->json();
+            }
+
+            throw new PlatformApiException(
+                'Careem',
+                'Failed to get catalog status: '.$response->body(),
+                $response->status()
+            );
+
+        } catch (\Exception $e) {
+            Log::error('Careem catalog status check failed', [
+                'request_id' => $requestId,
+                'error' => $e->getMessage(),
+            ]);
+
+            throw $e;
+        }
+    }
+
+    /**
+     * Get branch visibility status
+     *
+     * @param  string  $brandId  Brand ID
+     * @param  string  $branchId  Branch ID
+     * @return array Branch visibility information
+     *
+     * @throws PlatformApiException
+     */
+    public function getBranchVisibility(string $brandId, string $branchId): array
+    {
+        $token = $this->getAccessToken();
+        $endpoint = str_replace('{branch_id}', $branchId, config('platforms.careem.endpoints.branch_visibility'));
+        $url = $this->baseUrl.$endpoint;
+
+        try {
+            $response = Http::timeout($this->timeout)
+                ->withToken($token)
+                ->withHeaders([
+                    'User-Agent' => 'Careem-Loyverse-Integration/1.0',
+                ])
+                ->get($url);
+
+            if ($response->successful()) {
+                return $response->json();
+            }
+
+            throw new PlatformApiException(
+                'Careem',
+                'Failed to get branch visibility: '.$response->body(),
+                $response->status()
+            );
+
+        } catch (\Exception $e) {
+            Log::error('Careem branch visibility check failed', [
+                'brand_id' => $brandId,
+                'branch_id' => $branchId,
+                'error' => $e->getMessage(),
+            ]);
+
+            throw $e;
         }
     }
 

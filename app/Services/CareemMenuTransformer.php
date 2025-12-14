@@ -17,20 +17,32 @@ class CareemMenuTransformer
      * Transform menu to Careem catalog format
      *
      * @param  Menu  $menu  Menu model with loaded relationships
+     * @param  string  $catalogId  The catalog ID for this menu
      * @return array Catalog structure ready for API submission
      */
-    public function transform(Menu $menu): array
+    public function transform(Menu $menu, string $catalogId): array
     {
         $menu->load(['items.modifierGroups.modifiers', 'locations']);
 
+        // Transform to Careem's CreateFullCatalogRequest structure
+        $categories = $this->transformCategories($menu);
+        $items = $this->transformItems($menu);
+        $modifierGroups = $this->transformModifierGroups($menu);
+
         return [
-            'name' => $menu->name,
-            'description' => $menu->description,
-            'status' => $menu->is_active ? 'active' : 'inactive',
-            'image_url' => $menu->image_url ? $this->getFullImageUrl($menu->image_url) : null,
-            'categories' => $this->transformCategories($menu),
-            'items' => $this->transformItems($menu),
-            'modifier_groups' => $this->transformModifierGroups($menu),
+            'diff' => false, // Full catalog sync
+            'catalog' => [
+                'id' => $catalogId, // Required by Careem
+                'name' => $menu->name,
+                'description' => $menu->description,
+                'status' => $menu->is_active ? 'active' : 'inactive',
+                'image_url' => $menu->image_url ? $this->getFullImageUrl($menu->image_url) : null,
+            ],
+            'categories' => $categories,
+            'sub_categories' => [], // Not used currently
+            'items' => $items,
+            'groups' => $modifierGroups, // Modifier groups
+            'options' => $this->extractOptions($modifierGroups), // Individual modifiers
         ];
     }
 
@@ -46,9 +58,6 @@ class CareemMenuTransformer
             $categories[] = [
                 'id' => Str::slug($categoryName ?: 'general'),
                 'name' => $categoryName ?: 'General',
-                'description' => "Items in {$categoryName} category",
-                'sort_order' => count($categories),
-                'item_ids' => $items->pluck('id')->toArray(),
             ];
         }
 
@@ -66,7 +75,8 @@ class CareemMenuTransformer
                 'name' => $item->name,
                 'description' => $item->description ?? '',
                 'price' => (float) $item->price,
-                'category' => $item->category ?? 'general',
+                'currency' => 'AED', // Careem requires currency field
+                'category_id' => Str::slug($item->category ?: 'general'), // Changed from 'category' to 'category_id'
                 'sku' => $item->sku,
                 'sort_order' => $item->sort_order ?? 0,
                 'is_available' => (bool) $item->is_available,
@@ -138,6 +148,22 @@ class CareemMenuTransformer
                 'is_default' => (bool) ($modifier->pivot->is_default ?? false),
             ];
         })->toArray();
+    }
+
+    /**
+     * Extract all options (modifiers) from modifier groups
+     */
+    protected function extractOptions(array $modifierGroups): array
+    {
+        $options = [];
+
+        foreach ($modifierGroups as $group) {
+            foreach ($group['modifiers'] ?? [] as $modifier) {
+                $options[] = $modifier;
+            }
+        }
+
+        return $options;
     }
 
     /**

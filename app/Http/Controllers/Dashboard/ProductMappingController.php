@@ -266,4 +266,31 @@ class ProductMappingController extends Controller
 
         return back()->with('success', 'Product mapping cache cleared successfully');
     }
+
+    /**
+     * Refresh Loyverse items cache
+     */
+    public function refreshLoyverseItems($subdomain)
+    {
+        try {
+            // Force refresh the cache
+            $this->loyverseApiService->getAllItems(true, ['careem', 'talabat']);
+
+            if (request()->wantsJson()) {
+                return response()->json(['success' => true, 'message' => 'Loyverse items refreshed successfully']);
+            }
+
+            return back()->with('success', 'Loyverse items refreshed successfully');
+        } catch (\Exception $e) {
+            Log::error('Failed to refresh Loyverse items', [
+                'error' => $e->getMessage(),
+            ]);
+
+            if (request()->wantsJson()) {
+                return response()->json(['success' => false, 'message' => 'Failed to refresh Loyverse items: ' . $e->getMessage()], 500);
+            }
+
+            return back()->with('error', 'Failed to refresh Loyverse items: ' . $e->getMessage());
+        }
+    }
 }

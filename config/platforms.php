@@ -21,6 +21,7 @@ return [
     'careem' => [
         'enabled' => env('CAREEM_CATALOG_ENABLED', true),
         'api_url' => env('CAREEM_API_URL', 'https://apigateway-stg.careemdash.com/pos/api/v1'),
+        'user_agent' => env('CAREEM_USER_AGENT', 'loyverse-integration/1.0'),
         'auth' => [
             'type' => 'oauth2_client_credentials',
             'token_url' => env('CAREEM_TOKEN_URL', 'https://identity.qa.careem-engineering.com/token'),

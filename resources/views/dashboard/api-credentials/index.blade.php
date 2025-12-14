@@ -248,6 +248,20 @@
                             </div>
 
                             <div>
+                                <label for="careem_user_agent" class="block text-gray-700 text-sm font-bold mb-2">
+                                    User Agent (Optional)
+                                </label>
+                                <input
+                                    type="text"
+                                    name="user_agent"
+                                    id="careem_user_agent"
+                                    value="{{ $credentials->get('careem_catalog')['user_agent'] ?? '' }}"
+                                    placeholder="my-restaurant-pos/1.0"
+                                    class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
+                                <p class="text-gray-600 text-xs italic mt-1">Custom User-Agent string for API requests (e.g., restaurant-name-pos/1.0)</p>
+                            </div>
+
+                            <div>
                                 <label for="careem_api_url" class="block text-gray-700 text-sm font-bold mb-2">
                                     API Base URL (Optional)
                                 </label>

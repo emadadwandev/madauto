@@ -95,24 +95,23 @@
 
             <!-- Branches Table -->
             @if($branches->count() > 0)
-                <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
-                    <div class="overflow-x-auto">
-                        <table class="min-w-full divide-y divide-gray-200">
-                            <thead class="bg-gray-50">
-                                <tr>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Branch</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Brand</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">State</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">POS</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Visibility</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Location</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Last Sync</th>
-                                    <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody class="bg-white divide-y divide-gray-200">
-                                @foreach($branches as $branch)
-                                    <tr class="hover:bg-gray-50">
+                <div class="bg-white shadow-sm sm:rounded-lg overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Branch</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Brand</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">State</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">POS</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Visibility</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Location</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Last Sync</th>
+                                <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-200">
+                            @foreach($branches as $branch)
+                                <tr class="hover:bg-gray-50">
                                         <td class="px-6 py-4 whitespace-nowrap">
                                             <div class="text-sm font-medium text-gray-900">{{ $branch->name }}</div>
                                             <div class="text-xs text-gray-500">ID: {{ $branch->careem_branch_id }}</div>
@@ -162,12 +161,12 @@
                                             @endif
                                         </td>
                                         <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                            <div class="flex justify-end gap-2">
+                                            <div class="flex justify-end gap-2 items-center">
                                                 <a href="{{ route('dashboard.careem-branches.edit', ['subdomain' => request()->route('subdomain'), 'careemBranch' => $branch->id]) }}"
                                                    class="text-indigo-600 hover:text-indigo-900">
                                                     Edit
                                                 </a>
-                                                
+
                                                 <form action="{{ route('dashboard.careem-branches.sync', ['subdomain' => request()->route('subdomain'), 'careemBranch' => $branch->id]) }}" method="POST" class="inline">
                                                     @csrf
                                                     <button type="submit" class="text-blue-600 hover:text-blue-900">
@@ -175,11 +174,32 @@
                                                     </button>
                                                 </form>
 
-                                                <details class="relative inline-block text-left">
-                                                    <summary class="cursor-pointer text-gray-600 hover:text-gray-900">
-                                                        More
-                                                    </summary>
-                                                    <div class="absolute right-0 z-10 mt-2 w-48 origin-top-right rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5">
+                                                <div class="relative inline-block text-left" x-data="{
+                                                    open: false,
+                                                    setPosition() {
+                                                        if(this.open) {
+                                                            const button = this.$refs.button;
+                                                            const menu = this.$refs.menu;
+                                                            const rect = button.getBoundingClientRect();
+                                                            menu.style.position = 'fixed';
+                                                            menu.style.top = (rect.bottom + 8) + 'px';
+                                                            menu.style.right = (window.innerWidth - rect.right) + 'px';
+                                                        }
+                                                    }
+                                                }">
+                                                    <button
+                                                        @click="open = !open; $nextTick(() => setPosition())"
+                                                        @click.away="open = false"
+                                                        type="button"
+                                                        class="cursor-pointer text-gray-600 hover:text-gray-900"
+                                                        x-ref="button">
+                                                        More ▼
+                                                    </button>
+                                                    <div x-show="open"
+                                                         x-transition
+                                                         x-ref="menu"
+                                                         class="z-[9999] w-48 rounded-md bg-white shadow-xl ring-1 ring-black ring-opacity-5"
+                                                         style="position: fixed;">
                                                         <div class="py-1">
                                                             <form action="{{ route('dashboard.careem-branches.fetch', ['subdomain' => request()->route('subdomain'), 'careemBranch' => $branch->id]) }}" method="POST">
                                                                 @csrf
@@ -187,12 +207,12 @@
                                                                     Fetch from Careem
                                                                 </button>
                                                             </form>
-                                                            
+
                                                             <a href="{{ route('dashboard.careem-branches.temporary-status', ['subdomain' => request()->route('subdomain'), 'careemBranch' => $branch->id]) }}"
                                                                class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
                                                                 Set Temporary Closure
                                                             </a>
-                                                            
+
                                                             <form action="{{ route('dashboard.careem-branches.destroy', ['subdomain' => request()->route('subdomain'), 'careemBranch' => $branch->id]) }}"
                                                                   method="POST"
                                                                   onsubmit="return confirm('Are you sure you want to delete this branch?')">
@@ -216,14 +236,13 @@
                                                             @endif
                                                         </div>
                                                     </div>
-                                                </details>
+                                                </div>
                                             </div>
                                         </td>
                                     </tr>
                                 @endforeach
-                            </tbody>
-                        </table>
-                    </div>
+                        </tbody>
+                    </table>
 
                     <!-- Pagination -->
                     @if($branches->hasPages())

@@ -25,6 +25,7 @@ class Menu extends Model
         'is_active',
         'published_at',
         'metadata',
+        'careem_catalog_id',
     ];
 
     /**

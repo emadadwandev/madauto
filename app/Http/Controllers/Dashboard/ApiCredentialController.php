@@ -74,6 +74,7 @@ class ApiCredentialController extends Controller
             'client_id' => 'required|string',
             'client_secret' => 'required|string',
             'client_name' => 'nullable|string',
+            'user_agent' => 'nullable|string',
             'api_url' => 'nullable|url',
             'token_url' => 'nullable|url',
         ]);
@@ -111,6 +112,20 @@ class ApiCredentialController extends Controller
                 ],
                 [
                     'credential_value' => $validated['client_name'],
+                    'is_active' => true,
+                ]
+            );
+        }
+
+        // Save User Agent (Optional)
+        if (! empty($validated['user_agent'])) {
+            ApiCredential::updateOrCreate(
+                [
+                    'service' => 'careem_catalog',
+                    'credential_type' => 'user_agent',
+                ],
+                [
+                    'credential_value' => $validated['user_agent'],
                     'is_active' => true,
                 ]
             );

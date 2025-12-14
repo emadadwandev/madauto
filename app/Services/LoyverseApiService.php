@@ -205,16 +205,22 @@ class LoyverseApiService
 
     /**
      * Get all items with caching.
+     *
+     * @param bool $forceRefresh Force refresh cache
+     * @param array|null $categoryNames Filter by category names (e.g., ['careem', 'talabat'])
      */
-    public function getAllItems(bool $forceRefresh = false): array
+    public function getAllItems(bool $forceRefresh = false, ?array $categoryNames = null): array
     {
-        $cacheKey = 'loyverse:items:all';
+        // Different cache key if filtering by categories
+        $cacheKey = $categoryNames
+            ? 'loyverse:items:' . md5(implode(',', array_map('strtolower', $categoryNames)))
+            : 'loyverse:items:all';
 
         if ($forceRefresh) {
             Cache::forget($cacheKey);
         }
 
-        return Cache::remember($cacheKey, self::CACHE_TTL_ITEMS, function () {
+        return Cache::remember($cacheKey, self::CACHE_TTL_ITEMS, function () use ($categoryNames) {
             $allItems = [];
             $cursor = null;
 
@@ -223,6 +229,20 @@ class LoyverseApiService
                 $allItems = array_merge($allItems, $response['items'] ?? []);
                 $cursor = $response['cursor'] ?? null;
             } while ($cursor);
+
+            // Filter by category if specified
+            if ($categoryNames) {
+                $categoryIds = $this->getCategoryIdsByNames($categoryNames);
+
+                if (!empty($categoryIds)) {
+                    $allItems = array_filter($allItems, function ($item) use ($categoryIds) {
+                        return isset($item['category_id']) && in_array($item['category_id'], $categoryIds);
+                    });
+
+                    // Re-index array after filtering
+                    $allItems = array_values($allItems);
+                }
+            }
 
             return $allItems;
         });
@@ -234,6 +254,50 @@ class LoyverseApiService
     public function getItem(string $itemId): array
     {
         return $this->makeRequest('GET', "/v1.0/items/{$itemId}");
+    }
+
+    /**
+     * Get all categories with caching.
+     */
+    public function getCategories(bool $forceRefresh = false): array
+    {
+        $cacheKey = 'loyverse:categories:all';
+
+        if ($forceRefresh) {
+            Cache::forget($cacheKey);
+        }
+
+        return Cache::remember($cacheKey, self::CACHE_TTL_STORES, function () {
+            $response = $this->makeRequest('GET', '/v1.0/categories');
+
+            return $response['categories'] ?? [];
+        });
+    }
+
+    /**
+     * Get category IDs by names (case-insensitive).
+     *
+     * @param array $categoryNames Array of category names (e.g., ['careem', 'talabat'])
+     * @return array Array of category IDs
+     */
+    protected function getCategoryIdsByNames(array $categoryNames): array
+    {
+        $categories = $this->getCategories();
+        $categoryIds = [];
+
+        // Normalize search names to lowercase
+        $searchNames = array_map('strtolower', array_map('trim', $categoryNames));
+
+        foreach ($categories as $category) {
+            if (isset($category['name']) && isset($category['id'])) {
+                $categoryName = strtolower(trim($category['name']));
+                if (in_array($categoryName, $searchNames)) {
+                    $categoryIds[] = $category['id'];
+                }
+            }
+        }
+
+        return $categoryIds;
     }
 
     /**

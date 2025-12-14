@@ -156,8 +156,8 @@ class ProductMappingService
                 return $results;
             }
 
-            // Get all Loyverse items
-            $loyverseItems = $this->loyverseApiService->getAllItems();
+            // Get all Loyverse items (filtered by careem/talabat categories)
+            $loyverseItems = $this->loyverseApiService->getAllItems(false, ['careem-*', 'talabat']);  //TODO: Change the fillter to include any catigory contain careem- in it 
 
             // Build SKU index
             $skuIndex = [];
@@ -212,7 +212,8 @@ class ProductMappingService
         }
 
         try {
-            $items = $this->loyverseApiService->getAllItems();
+            // Get items filtered by careem/talabat categories
+            $items = $this->loyverseApiService->getAllItems(false, ['careem', 'talabat']);
 
             $formattedItems = [];
             foreach ($items as $item) {

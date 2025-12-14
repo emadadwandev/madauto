@@ -440,4 +440,23 @@ class MenuController extends Controller
             return back()->with('error', 'Failed to duplicate menu: '.$e->getMessage());
         }
     }
+
+    /**
+     * Sync menu to platforms
+     */
+    public function sync(string $subdomain, Menu $menu)
+    {
+        try {
+            // Dispatch sync job for Careem platform
+            \App\Jobs\SyncMenuToPlatformJob::dispatch($menu, 'careem', $menu->tenant_id);
+
+            return redirect()
+                ->route('dashboard.menus.index', ['subdomain' => $subdomain])
+                ->with('success', 'Menu sync started! The menu will be synced to Careem in the background.');
+        } catch (\Exception $e) {
+            return redirect()
+                ->route('dashboard.menus.index', ['subdomain' => $subdomain])
+                ->with('error', 'Failed to start menu sync: ' . $e->getMessage());
+        }
+    }
 }

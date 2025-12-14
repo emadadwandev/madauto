@@ -344,6 +344,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('/import', [ProductMappingController::class, 'import'])->name('import');
         Route::get('/export', [ProductMappingController::class, 'export'])->name('export');
         Route::post('/clear-cache', [ProductMappingController::class, 'clearCache'])->name('clear-cache');
+        Route::post('/refresh-loyverse-items', [ProductMappingController::class, 'refreshLoyverseItems'])->name('refresh-loyverse-items');
     });
 
     // Sync Logs
@@ -442,6 +443,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('/{menu}/publish', [MenuController::class, 'publish'])->name('publish');
         Route::post('/{menu}/unpublish', [MenuController::class, 'unpublish'])->name('unpublish');
         Route::post('/{menu}/duplicate', [MenuController::class, 'duplicate'])->name('duplicate');
+        Route::post('/{menu}/sync', [MenuController::class, 'sync'])->name('sync');
 
         // Menu Items
         Route::get('/{menu}/items/create', [MenuItemController::class, 'create'])->name('items.create');

@@ -28,11 +28,11 @@ class MenuItemController extends Controller
     {
         $modifierGroups = ModifierGroup::active()->with('activeModifiers')->orderBy('sort_order')->get();
 
-        // Get Loyverse items for mapping
+        // Get Loyverse items for mapping (filtered by careem/talabat categories)
         $loyverseItems = [];
         try {
             if ($this->loyverseApiService->hasCredentials()) {
-                $loyverseItems = $this->loyverseApiService->getAllItems();
+                $loyverseItems = $this->loyverseApiService->getAllItems(false, ['careem', 'talabat']);
             }
         } catch (\Exception $e) {
             Log::warning('Failed to fetch Loyverse items', ['error' => $e->getMessage()]);
@@ -103,10 +103,34 @@ class MenuItemController extends Controller
                 $menuItem->modifierGroups()->sync($syncData);
             }
 
+            // Auto-create product mappings for platforms if Loyverse item is selected
+            if (!empty($validated['loyverse_item_id'])) {
+                $platforms = ['careem', 'talabat'];
+                foreach ($platforms as $platform) {
+                    // Check if mapping already exists
+                    $existingMapping = \App\Models\ProductMapping::where('platform', $platform)
+                        ->where('platform_product_id', $menuItem->id)
+                        ->first();
+
+                    if (!$existingMapping) {
+                        \App\Models\ProductMapping::create([
+                            'tenant_id' => tenant()->id,
+                            'platform' => $platform,
+                            'platform_product_id' => (string) $menuItem->id,
+                            'platform_sku' => $validated['sku'] ?? null,
+                            'platform_name' => $validated['name'],
+                            'loyverse_item_id' => $validated['loyverse_item_id'],
+                            'loyverse_variant_id' => $validated['loyverse_variant_id'] ?? null,
+                            'is_active' => true,
+                        ]);
+                    }
+                }
+            }
+
             DB::commit();
 
             return redirect()->route('dashboard.menus.edit', ['menu' => $menu, 'subdomain' => request()->route('subdomain')])
-                ->with('success', 'Menu item added successfully.');
+                ->with('success', 'Menu item added successfully and product mappings created.');
         } catch (\Exception $e) {
             DB::rollBack();
 
@@ -134,11 +158,11 @@ class MenuItemController extends Controller
         $menuItem->load('modifierGroups');
         $modifierGroups = ModifierGroup::active()->with('activeModifiers')->orderBy('sort_order')->get();
 
-        // Get Loyverse items for mapping
+        // Get Loyverse items for mapping (filtered by careem/talabat categories)
         $loyverseItems = [];
         try {
             if ($this->loyverseApiService->hasCredentials()) {
-                $loyverseItems = $this->loyverseApiService->getAllItems();
+                $loyverseItems = $this->loyverseApiService->getAllItems(false, ['careem', 'talabat']);
             }
         } catch (\Exception $e) {
             Log::warning('Failed to fetch Loyverse items', ['error' => $e->getMessage()]);
@@ -218,10 +242,35 @@ class MenuItemController extends Controller
                 $menuItem->modifierGroups()->detach();
             }
 
+            // Update product mappings for platforms if Loyverse item changed
+            if (!empty($validated['loyverse_item_id'])) {
+                $platforms = ['careem', 'talabat'];
+                foreach ($platforms as $platform) {
+                    \App\Models\ProductMapping::updateOrCreate(
+                        [
+                            'platform' => $platform,
+                            'platform_product_id' => (string) $menuItem->id,
+                        ],
+                        [
+                            'tenant_id' => tenant()->id,
+                            'platform_sku' => $validated['sku'] ?? null,
+                            'platform_name' => $validated['name'],
+                            'loyverse_item_id' => $validated['loyverse_item_id'],
+                            'loyverse_variant_id' => $validated['loyverse_variant_id'] ?? null,
+                            'is_active' => true,
+                        ]
+                    );
+                }
+            } else {
+                // If Loyverse item removed, deactivate mappings
+                \App\Models\ProductMapping::where('platform_product_id', (string) $menuItem->id)
+                    ->update(['is_active' => false]);
+            }
+
             DB::commit();
 
             return redirect()->route('dashboard.menus.edit', ['menu' => $menu, 'subdomain' => request()->route('subdomain')])
-                ->with('success', 'Menu item updated successfully.');
+                ->with('success', 'Menu item and product mappings updated successfully.');
         } catch (\Exception $e) {
             DB::rollBack();
 

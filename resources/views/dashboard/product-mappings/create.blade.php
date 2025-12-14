@@ -60,10 +60,58 @@
                             <p class="text-gray-600 text-xs italic mt-1">The SKU from the delivery platform (if available)</p>
                         </div>
 
-                        <div class="mb-4" x-data="{ search: '', selectedItem: null }">
-                            <label for="loyverse_item_search" class="block text-gray-700 text-sm font-bold mb-2">
-                                Loyverse Item * <span class="text-gray-500 font-normal text-xs">({{ count($loyverseItems) }} items available)</span>
-                            </label>
+                        <div class="mb-4" x-data="{
+                            search: '',
+                            selectedItem: null,
+                            refreshing: false,
+                            itemCount: {{ count($loyverseItems) }},
+                            refreshItems() {
+                                this.refreshing = true;
+                                fetch('{{ route('product-mappings.refresh-loyverse-items', ['subdomain' => request()->route('subdomain')]) }}', {
+                                    method: 'POST',
+                                    headers: {
+                                        'Content-Type': 'application/json',
+                                        'Accept': 'application/json',
+                                        'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                                    }
+                                })
+                                .then(response => {
+                                    if (!response.ok) {
+                                        throw new Error('Network response was not ok');
+                                    }
+                                    return response.json();
+                                })
+                                .then(data => {
+                                    if (data.success) {
+                                        window.location.reload();
+                                    } else {
+                                        alert('Failed to refresh items: ' + (data.message || 'Unknown error'));
+                                    }
+                                })
+                                .catch(error => {
+                                    console.error('Error:', error);
+                                    alert('Failed to refresh items. Please try again.');
+                                })
+                                .finally(() => {
+                                    this.refreshing = false;
+                                });
+                            }
+                        }">
+                            <div class="flex justify-between items-center mb-2">
+                                <label for="loyverse_item_search" class="text-gray-700 text-sm font-bold">
+                                    Loyverse Item * <span class="text-gray-500 font-normal text-xs" x-text="`(${itemCount} items available)`"></span>
+                                </label>
+                                <button
+                                    type="button"
+                                    @click="refreshItems()"
+                                    :disabled="refreshing"
+                                    class="inline-flex items-center px-3 py-1 border border-gray-300 shadow-sm text-xs font-medium rounded text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed">
+                                    <svg class="w-3 h-3 mr-1" :class="{ 'animate-spin': refreshing }" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                                    </svg>
+                                    <span x-text="refreshing ? 'Refreshing...' : 'Refresh Items'"></span>
+                                </button>
+                            </div>
 
                             <!-- Search Box -->
                             <input

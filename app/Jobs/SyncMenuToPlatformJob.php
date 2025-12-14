@@ -119,22 +119,93 @@ class SyncMenuToPlatformJob implements ShouldQueue
         $apiService = new CareemApiService($this->tenantId);
         $transformer = new CareemMenuTransformer;
 
-        // Transform menu to Careem format
-        $catalogData = $transformer->transform($menu);
+        // Get brand and branch IDs from menu's associated branch
+        $branch = $menu->locations()->first()?->careemBranch;
+        $brandId = $branch?->brand?->careem_brand_id;
+        $branchId = $branch?->careem_branch_id;
+        
+        // Generate catalogId from menu and branch (or use existing if stored)
+        $catalogId = $menu->careem_catalog_id ?? 'catalog_' . $menu->id . '_' . ($branchId ?? 'default');
 
-        // Get restaurant ID from tenant credentials if available
-        $credential = \App\Models\ApiCredential::where('tenant_id', $this->tenantId)
-            ->where('service', 'careem_catalog')
-            ->first();
+        // Save catalogId to menu if it's new
+        if (!$menu->careem_catalog_id) {
+            $menu->update(['careem_catalog_id' => $catalogId]);
+        }
 
-        $restaurantId = $credential?->credentials['restaurant_id'] ?? null;
+        if (!$brandId || !$branchId) {
+            Log::warning('Careem sync attempted without brand/branch mapping', [
+                'menu_id' => $menu->id,
+                'brand_id' => $brandId,
+                'branch_id' => $branchId,
+            ]);
+        }
+
+        // Transform menu to Careem format with catalogId
+        $catalogData = $transformer->transform($menu, $catalogId);
 
         // Submit to Careem
-        $result = $apiService->submitCatalog($catalogData, $restaurantId);
+        $result = $apiService->submitCatalog($catalogData, $brandId, $branchId, $catalogId);
+
+        // Store request_id for status checking
+        $requestId = $result['data']['request_id'] ?? $result['catalog_id'] ?? null;
+
+        if ($requestId) {
+            // Check catalog status (Careem processes async)
+            try {
+                $statusResult = $apiService->getCatalogStatus($requestId);
+
+                // Status can be: pending, processing, accepted, rejected
+                $status = $statusResult['status'] ?? 'unknown';
+
+                Log::info('Careem catalog status checked', [
+                    'request_id' => $requestId,
+                    'status' => $status,
+                    'result' => $statusResult,
+                ]);
+
+                // If still processing, mark as pending (will be checked by a separate status job)
+                if (in_array($status, ['pending', 'processing'])) {
+                    return [
+                        'success' => false,
+                        'platform_menu_id' => $requestId,
+                        'message' => 'Catalog submitted, processing by Careem (Status: ' . $status . ')',
+                        'status' => 'processing',
+                    ];
+                }
+
+                // If accepted, mark as success
+                if ($status === 'accepted') {
+                    return [
+                        'success' => true,
+                        'platform_menu_id' => $requestId,
+                        'message' => 'Catalog accepted by Careem',
+                    ];
+                }
+
+                // If rejected, mark as failed
+                if ($status === 'rejected') {
+                    throw new \Exception('Catalog rejected by Careem: ' . ($statusResult['message'] ?? 'Unknown reason'));
+                }
+
+            } catch (\Exception $e) {
+                Log::warning('Could not check catalog status immediately', [
+                    'request_id' => $requestId,
+                    'error' => $e->getMessage(),
+                ]);
+
+                // Return as processing, status will be checked later
+                return [
+                    'success' => false,
+                    'platform_menu_id' => $requestId,
+                    'message' => 'Catalog submitted, status check pending',
+                    'status' => 'processing',
+                ];
+            }
+        }
 
         return [
             'success' => $result['success'] ?? false,
-            'platform_menu_id' => $result['catalog_id'] ?? null,
+            'platform_menu_id' => $requestId,
             'message' => $result['message'] ?? 'Submitted to Careem',
         ];
     }
