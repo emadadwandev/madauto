@@ -74,6 +74,12 @@ class SyncToLoyverseJob implements ShouldQueue
                 $usageTrackingService->recordOrder($this->order->tenant);
             }
 
+            // Mark order as ready in Careem (if auto-mark-ready is enabled)
+            $platform = $this->order->order_data['platform'] ?? null;
+            if ($platform === 'careem') {
+                MarkCareemOrderReadyJob::dispatch($this->order)->delay(now()->addSeconds(5));
+            }
+
         } catch (\App\Exceptions\LoyverseApiException $e) {
             // Handle Loyverse API specific errors
             $this->handleLoyverseApiException($e);

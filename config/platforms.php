@@ -45,7 +45,7 @@ return [
             // Catalog API
             'catalogs' => '/catalogs',
             'catalog_status' => '/catalogs/status/{request_id}',
-            'catalog_items' => '/catalogs/{catalog_id}/items',
+            'catalog_items_availability' => '/catalogs/{catalog_id}/items', // PATCH only - update availability
 
             // Operational Hours API
             'operational_hours' => '/operational-hours',

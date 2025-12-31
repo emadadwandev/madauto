@@ -7,6 +7,28 @@
 
     <div class="py-12">
         <div class="max-w-3xl mx-auto sm:px-6 lg:px-8">
+            <!-- Flash Messages -->
+            @if(session('success'))
+                <div class="mb-4 bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative" role="alert">
+                    <strong class="font-bold">Success!</strong>
+                    <span class="block sm:inline">{{ session('success') }}</span>
+                </div>
+            @endif
+
+            @if(session('warning'))
+                <div class="mb-4 bg-yellow-100 border border-yellow-400 text-yellow-700 px-4 py-3 rounded relative" role="alert">
+                    <strong class="font-bold">Warning!</strong>
+                    <span class="block sm:inline">{{ session('warning') }}</span>
+                </div>
+            @endif
+
+            @if(session('error'))
+                <div class="mb-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
+                    <strong class="font-bold">Error!</strong>
+                    <span class="block sm:inline">{{ session('error') }}</span>
+                </div>
+            @endif
+
             <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
                 <div class="p-6">
                     <form method="POST" action="{{ route('dashboard.careem-branches.update', ['subdomain' => request()->route('subdomain'), 'careemBranch' => $branch->id]) }}">
@@ -154,6 +176,66 @@
                                             Set Closure
                                         </button>
                                     </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Operational Hours Section -->
+                        <div class="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                            <div class="flex items-start">
+                                <svg class="w-5 h-5 text-blue-500 mr-3 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                                <div class="flex-1">
+                                    <label class="text-sm font-medium text-blue-900">Operational Hours</label>
+                                    <p class="text-xs text-blue-700 mt-1 mb-3">Current operational hours from Careem</p>
+
+                                    @if($operationalHoursError)
+                                        <div class="bg-red-100 border border-red-300 text-red-700 px-3 py-2 rounded text-xs">
+                                            <strong>Error:</strong> {{ $operationalHoursError }}
+                                        </div>
+                                    @elseif($operationalHours && count($operationalHours) > 0)
+                                        <div class="space-y-2">
+                                            @php
+                                                $dayNames = ['', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+                                            @endphp
+                                            @foreach($operationalHours as $daySchedule)
+                                                <div class="flex items-center justify-between px-3 py-2 bg-white rounded border {{ $daySchedule['active'] ? 'border-green-200' : 'border-gray-200' }}">
+                                                    <div class="flex items-center">
+                                                        <span class="font-medium text-sm {{ $daySchedule['active'] ? 'text-gray-900' : 'text-gray-400' }}">
+                                                            {{ $dayNames[$daySchedule['day_of_week']] ?? 'Day ' . $daySchedule['day_of_week'] }}
+                                                        </span>
+                                                        @if($daySchedule['active'])
+                                                            <span class="ml-2 px-2 py-0.5 bg-green-100 text-green-800 text-xs rounded">Active</span>
+                                                        @else
+                                                            <span class="ml-2 px-2 py-0.5 bg-gray-100 text-gray-600 text-xs rounded">Closed</span>
+                                                        @endif
+                                                    </div>
+                                                    <div>
+                                                        @if($daySchedule['active'] && !empty($daySchedule['shifts']))
+                                                            @foreach($daySchedule['shifts'] as $shift)
+                                                                <span class="text-sm text-gray-700">
+                                                                    {{ $shift['start_time'] }} - {{ $shift['end_time'] }}
+                                                                </span>
+                                                                @if(!$loop->last)
+                                                                    <span class="text-gray-400 mx-1">|</span>
+                                                                @endif
+                                                            @endforeach
+                                                        @else
+                                                            <span class="text-sm text-gray-400">No shifts</span>
+                                                        @endif
+                                                    </div>
+                                                </div>
+                                            @endforeach
+                                        </div>
+                                        <p class="mt-2 text-xs text-gray-600">
+                                            <strong>Note:</strong> Operational hours are synced automatically when menu is synced. Update location opening hours to change them.
+                                        </p>
+                                    @else
+                                        <div class="bg-gray-100 border border-gray-300 text-gray-700 px-3 py-2 rounded text-xs">
+                                            No operational hours configured yet. They will be synced automatically when the menu is synced.
+                                        </div>
+                                    @endif
                                 </div>
                             </div>
                         </div>

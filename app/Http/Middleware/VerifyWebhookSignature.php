@@ -22,8 +22,6 @@ class VerifyWebhookSignature
      */
     public function handle(Request $request, Closure $next)
     {
-        $signature = $request->header('X-Careem-Signature');
-
         // Get tenant from route parameter
         $tenant = $request->route('tenant');
         if (! $tenant) {
@@ -36,7 +34,7 @@ class VerifyWebhookSignature
             abort(404, 'Tenant not found.');
         }
 
-        // Verify x-careem-api-key
+        // REQUIRED: Verify x-careem-api-key (as per Careem documentation)
         $apiKey = $request->header('x-careem-api-key');
         if (! $apiKey || $apiKey !== $tenantModel->careem_api_key) {
             abort(401, 'Invalid or missing x-careem-api-key header.');
@@ -45,23 +43,37 @@ class VerifyWebhookSignature
         // Set tenant context before getting credentials
         app()->instance('tenant', $tenantModel);
 
-        // Get tenant-specific credentials
+        // OPTIONAL: Verify webhook signature if webhook_secret is configured
+        // Note: This is additional security not mentioned in Careem's official docs
         $credentials = $this->apiCredentialRepository->getActiveCredentials('careem');
-        if (! $credentials || ! isset($credentials['webhook_secret'])) {
-            abort(401, 'Webhook secret not configured for this tenant.');
-        }
 
-        $secret = $credentials['webhook_secret'];
+        if ($credentials && isset($credentials['webhook_secret']) && ! empty($credentials['webhook_secret'])) {
+            $signature = $request->header('X-Careem-Signature');
+            $secret = $credentials['webhook_secret'];
 
-        if (! $signature || ! $secret) {
-            abort(401, 'Signature not provided.');
-        }
+            if (! $signature) {
+                \Log::warning('Webhook secret is configured but X-Careem-Signature header is missing', [
+                    'tenant' => $tenant,
+                    'url' => $request->fullUrl(),
+                ]);
+                abort(401, 'Webhook signature verification enabled but X-Careem-Signature header not provided.');
+            }
 
-        $payload = $request->getContent();
-        $computedSignature = hash_hmac('sha256', $payload, $secret);
+            $payload = $request->getContent();
+            $computedSignature = hash_hmac('sha256', $payload, $secret);
 
-        if (! hash_equals($signature, 'sha256='.$computedSignature)) {
-            abort(401, 'Invalid signature.');
+            if (! hash_equals($signature, 'sha256='.$computedSignature)) {
+                \Log::warning('Invalid webhook signature', [
+                    'tenant' => $tenant,
+                    'expected' => 'sha256='.$computedSignature,
+                    'received' => $signature,
+                ]);
+                abort(401, 'Invalid webhook signature.');
+            }
+
+            \Log::info('Webhook signature verified successfully', ['tenant' => $tenant]);
+        } else {
+            \Log::info('Webhook signature verification skipped (no secret configured)', ['tenant' => $tenant]);
         }
 
         return $next($request);

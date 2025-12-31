@@ -86,6 +86,22 @@ class Tenant extends Model
     }
 
     /**
+     * Get all Careem brands for the tenant.
+     */
+    public function careemBrands(): HasMany
+    {
+        return $this->hasMany(CareemBrand::class);
+    }
+
+    /**
+     * Get all Careem branches for the tenant.
+     */
+    public function careemBranches(): HasMany
+    {
+        return $this->hasMany(CareemBranch::class);
+    }
+
+    /**
      * Check if tenant is active.
      */
     public function isActive(): bool
@@ -159,6 +175,16 @@ class Tenant extends Model
     public function getSetting(string $key, $default = null)
     {
         return $this->settings[$key] ?? $default;
+    }
+
+    /**
+     * Set a setting value.
+     */
+    public function setSetting(string $key, $value): void
+    {
+        $settings = $this->settings ?? [];
+        $settings[$key] = $value;
+        $this->update(['settings' => $settings]);
     }
 
     /**

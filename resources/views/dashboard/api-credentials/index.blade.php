@@ -69,11 +69,15 @@
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
                                 <label for="careem_webhook_secret" class="block text-gray-700 text-sm font-bold mb-2">
-                                    Webhook Secret *
+                                    Webhook Secret <span class="text-gray-500 font-normal">(Optional - Not Required by Careem)</span>
                                 </label>
-                                <input type="password" name="credential_value" id="careem_webhook_secret" placeholder="Enter Careem Webhook Secret" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
+                                <input type="password" name="credential_value" id="careem_webhook_secret" placeholder="Leave blank unless Careem requires signature verification" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
                                 <input type="hidden" name="credential_type" value="webhook_secret">
-                                <p class="text-gray-600 text-xs italic mt-1">Used to verify incoming webhook requests from Careem</p>
+                                <p class="text-gray-600 text-xs italic mt-1">
+                                    <strong>Note:</strong> Careem's official documentation only requires <code>x-careem-api-key</code> for authentication.
+                                    Leave this blank unless you have confirmed with Careem that they support HMAC signature verification.
+                                    If configured, webhooks without the <code>X-Careem-Signature</code> header will be rejected.
+                                </p>
                             </div>
 
                             <div class="flex items-end">
@@ -87,7 +91,7 @@
                     <!-- Webhook URL -->
                     <div class="mt-6 pt-6 border-t">
                         <label class="block text-gray-700 text-sm font-bold mb-2">
-                            Webhook URL (Provide this to Careem)
+                            Webhook URL (Provide this to Careem) <span class="text-green-600">✓ Required</span>
                         </label>
                         <div class="flex items-center bg-gray-100 p-3 rounded">
                             <code class="flex-1 text-sm">{{ url('/api/webhook/careem/' . request()->route('subdomain')) }}</code>
@@ -100,7 +104,7 @@
                         </p>
 
                         <label class="block text-gray-700 text-sm font-bold mb-2 mt-4">
-                            x-careem-api-key (Provide this to Careem)
+                            x-careem-api-key (Provide this to Careem) <span class="text-green-600">✓ Required</span>
                         </label>
                         <div class="flex items-center bg-gray-100 p-3 rounded">
                             <code class="flex-1 text-sm">{{ tenant()->careem_api_key }}</code>

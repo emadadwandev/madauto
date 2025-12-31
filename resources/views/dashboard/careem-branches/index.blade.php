@@ -7,13 +7,24 @@
                 </h2>
                 <p class="mt-1 text-sm text-gray-600">Manage your restaurant outlets/locations for Careem delivery</p>
             </div>
-            <a href="{{ route('dashboard.careem-branches.create', ['subdomain' => request()->route('subdomain')]) }}"
-               class="inline-flex items-center px-4 py-2 bg-indigo-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-indigo-700">
-                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-                </svg>
-                Add Branch
-            </a>
+            <div class="flex gap-3">
+                <form action="{{ route('dashboard.careem-branches.sync-all', ['subdomain' => request()->route('subdomain')]) }}" method="POST" class="inline">
+                    @csrf
+                    <button type="submit" class="inline-flex items-center px-4 py-2 bg-green-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-green-700">
+                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                        </svg>
+                        Sync All from Careem
+                    </button>
+                </form>
+                <a href="{{ route('dashboard.careem-branches.create', ['subdomain' => request()->route('subdomain')]) }}"
+                   class="inline-flex items-center px-4 py-2 bg-indigo-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-indigo-700">
+                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                    </svg>
+                    Add Branch
+                </a>
+            </div>
         </div>
     </x-slot>
 

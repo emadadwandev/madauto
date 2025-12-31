@@ -15,10 +15,13 @@ class Order extends Model
         'careem_order_id',
         'order_data',
         'status',
+        'platform_status',
+        'platform_status_updated_at',
     ];
 
     protected $casts = [
         'order_data' => 'array',
+        'platform_status_updated_at' => 'datetime',
     ];
 
     public function loyverseOrder()

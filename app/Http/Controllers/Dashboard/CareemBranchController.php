@@ -130,7 +130,34 @@ class CareemBranchController extends Controller
             ->orderBy('name')
             ->get();
 
-        return view('dashboard.careem-branches.edit', compact('branch', 'brands', 'locations'));
+        // Fetch operational hours from Careem API
+        $operationalHours = null;
+        $operationalHoursError = null;
+
+        if ($branch->brand && $branch->careem_branch_id) {
+            try {
+                $careemService = new CareemApiService(tenant()->id);
+                $result = $careemService->getBranchOperationalHours(
+                    $branch->brand->careem_brand_id,
+                    $branch->careem_branch_id
+                );
+                $operationalHours = $result['operational_hours'] ?? [];
+
+                Log::info('Fetched operational hours for branch', [
+                    'branch_id' => $branch->id,
+                    'careem_branch_id' => $branch->careem_branch_id,
+                    'hours_count' => count($operationalHours),
+                ]);
+            } catch (\Exception $e) {
+                $operationalHoursError = $e->getMessage();
+                Log::warning('Could not fetch operational hours from Careem', [
+                    'branch_id' => $branch->id,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        }
+
+        return view('dashboard.careem-branches.edit', compact('branch', 'brands', 'locations', 'operationalHours', 'operationalHoursError'));
     }
 
     /**
@@ -142,6 +169,7 @@ class CareemBranchController extends Controller
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'location_id' => 'nullable|exists:locations,id',
+            'visibility_status' => 'required|integer|in:1,2',
             'sync_to_careem' => 'nullable|boolean',
         ]);
 
@@ -149,16 +177,26 @@ class CareemBranchController extends Controller
             $branch->update([
                 'name' => $validated['name'],
                 'location_id' => $validated['location_id'] ?? null,
+                'visibility_status' => $validated['visibility_status'],
             ]);
 
             // Sync to Careem API if requested
             if ($request->boolean('sync_to_careem')) {
                 try {
                     $careemService = new CareemApiService(tenant()->id);
+
+                    // Update branch name
                     $response = $careemService->createOrUpdateBranch(
                         $branch->brand->careem_brand_id,
                         $branch->careem_branch_id,
                         $branch->name
+                    );
+
+                    // Update visibility status
+                    $careemService->updateBranchVisibilityStatus(
+                        $branch->brand->careem_brand_id,
+                        $branch->careem_branch_id,
+                        $validated['visibility_status']
                     );
 
                     $branch->update([
@@ -168,7 +206,7 @@ class CareemBranchController extends Controller
                     ]);
 
                     return redirect()
-                        ->route('tenant.careem-branches.index', $subdomain)
+                        ->route('dashboard.careem-branches.edit', ['subdomain' => $subdomain, 'careemBranch' => $branch->id])
                         ->with('success', 'Branch updated and synced to Careem successfully!');
                 } catch (\Exception $e) {
                     Log::error('Failed to sync branch to Careem', [
@@ -177,13 +215,13 @@ class CareemBranchController extends Controller
                     ]);
 
                     return redirect()
-                        ->route('tenant.careem-branches.index', $subdomain)
+                        ->route('dashboard.careem-branches.edit', ['subdomain' => $subdomain, 'careemBranch' => $branch->id])
                         ->with('warning', 'Branch updated locally but failed to sync to Careem: ' . $e->getMessage());
                 }
             }
 
             return redirect()
-                ->route('tenant.careem-branches.index', $subdomain)
+                ->route('dashboard.careem-branches.edit', ['subdomain' => $subdomain, 'careemBranch' => $branch->id])
                 ->with('success', 'Branch updated successfully!');
         } catch (\Exception $e) {
             Log::error('Failed to update branch', [
@@ -274,6 +312,68 @@ class CareemBranchController extends Controller
             ]);
 
             return back()->with('error', 'Failed to fetch branch: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Sync all branches from Careem for all brands
+     */
+    public function syncAllFromCareem(string $subdomain)
+    {
+        try {
+            $careemService = new CareemApiService(tenant()->id);
+            $brands = CareemBrand::all();
+
+            if ($brands->isEmpty()) {
+                return back()->with('warning', 'No brands found. Please create a brand first.');
+            }
+
+            $totalCreated = 0;
+            $totalUpdated = 0;
+            $errors = [];
+
+            foreach ($brands as $brand) {
+                try {
+                    if (empty($brand->careem_brand_id)) {
+                        $errors[] = "Brand '{$brand->name}' has no Careem Brand ID";
+                        continue;
+                    }
+
+                    Log::info('Syncing branches for brand', [
+                        'brand_id' => $brand->id,
+                        'brand_name' => $brand->name,
+                        'careem_brand_id' => $brand->careem_brand_id,
+                    ]);
+
+                    $result = $careemService->syncBranches($brand->careem_brand_id, tenant()->id);
+                    $totalCreated += $result['created'] ?? 0;
+                    $totalUpdated += $result['updated'] ?? 0;
+
+                } catch (\Exception $e) {
+                    $errors[] = "Brand '{$brand->name}': {$e->getMessage()}";
+                    Log::error('Failed to sync branches for brand', [
+                        'brand_id' => $brand->id,
+                        'error' => $e->getMessage(),
+                    ]);
+                }
+            }
+
+            $message = "Sync complete! Created: {$totalCreated}, Updated: {$totalUpdated}";
+
+            if (!empty($errors)) {
+                $message .= " | Errors: " . implode('; ', $errors);
+                return back()->with('warning', $message);
+            }
+
+            return back()->with('success', $message);
+
+        } catch (\Exception $e) {
+            Log::error('Failed to sync all branches', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            return back()->with('error', 'Failed to sync branches: ' . $e->getMessage());
         }
     }
 

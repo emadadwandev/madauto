@@ -1,0 +1,835 @@
+{
+	"info": {
+		"_postman_id": "careem-branch-brand-status-2025",
+		"name": "Careem Branch & Brand Status API",
+		"description": "Collection for fetching Careem branch and brand status information.\n\nBefore using:\n1. Import the 'Careem Catalog - Staging' environment\n2. Set your client_id, client_secret, brand_id, and branch_id in environment variables\n3. Run \"1. Get Access Token\" first to authenticate\n4. Then run other requests as needed\n\nThe access token is automatically saved and reused.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Authentication",
+			"item": [
+				{
+					"name": "1. Get Access Token",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// Save access token to environment",
+									"var jsonData = pm.response.json();",
+									"",
+									"if (jsonData.access_token) {",
+									"    pm.environment.set(\"access_token\", jsonData.access_token);",
+									"    pm.environment.set(\"token_expires_at\", Date.now() + (jsonData.expires_in * 1000));",
+									"    console.log(\"✅ Access token saved successfully\");",
+									"    console.log(\"Token expires in: \" + jsonData.expires_in + \" seconds\");",
+									"} else {",
+									"    console.error(\"❌ No access token in response\");",
+									"}",
+									"",
+									"// Test for successful response",
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Response has access_token\", function () {",
+									"    pm.expect(jsonData).to.have.property('access_token');",
+									"});",
+									"",
+									"pm.test(\"Token type is Bearer\", function () {",
+									"    pm.expect(jsonData.token_type).to.equal('Bearer');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"// Check if required variables are set",
+									"const clientId = pm.environment.get(\"client_id\");",
+									"const clientSecret = pm.environment.get(\"client_secret\");",
+									"",
+									"if (!clientId || !clientSecret) {",
+									"    console.error(\"❌ Missing credentials!\");",
+									"    console.log(\"Please set client_id and client_secret in environment variables\");",
+									"} else {",
+									"    console.log(\"✅ Credentials found\");",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/x-www-form-urlencoded"
+							}
+						],
+						"body": {
+							"mode": "urlencoded",
+							"urlencoded": [
+								{
+									"key": "grant_type",
+									"value": "client_credentials",
+									"type": "text"
+								},
+								{
+									"key": "client_id",
+									"value": "{{client_id}}",
+									"type": "text"
+								},
+								{
+									"key": "client_secret",
+									"value": "{{client_secret}}",
+									"type": "text"
+								},
+								{
+									"key": "scope",
+									"value": "pos",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{token_url}}",
+							"host": ["{{token_url}}"]
+						},
+						"description": "Get OAuth2 access token using client credentials grant type.\n\nThe token is automatically saved to the environment variable `access_token` and will be used in subsequent requests."
+					},
+					"response": []
+				}
+			],
+			"description": "Authentication endpoints for obtaining OAuth2 access tokens."
+		},
+		{
+			"name": "Brand Management",
+			"item": [
+				{
+					"name": "2. Get All Brands",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Response is JSON\", function () {",
+									"    pm.response.to.be.json;",
+									"});",
+									"",
+									"// Log response for debugging",
+									"console.log(\"Brands Response:\", pm.response.json());"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"// Check if access token exists",
+									"const token = pm.environment.get(\"access_token\");",
+									"if (!token) {",
+									"    console.error(\"❌ No access token found!\");",
+									"    console.log(\"Please run '1. Get Access Token' first\");",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}",
+								"type": "text"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "User-Agent",
+								"value": "{{user_agent}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/brands",
+							"host": ["{{base_url}}"],
+							"path": ["brands"]
+						},
+						"description": "Retrieve list of all brands associated with the authenticated account."
+					},
+					"response": []
+				},
+				{
+					"name": "3. Get Brand Details",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Response is JSON\", function () {",
+									"    pm.response.to.be.json;",
+									"});",
+									"",
+									"var jsonData = pm.response.json();",
+									"",
+									"pm.test(\"Response has brand_id\", function () {",
+									"    pm.expect(jsonData).to.have.property('brand_id');",
+									"});",
+									"",
+									"// Log response for debugging",
+									"console.log(\"Brand Details:\", jsonData);"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"// Check if access token exists",
+									"const token = pm.environment.get(\"access_token\");",
+									"const brandId = pm.environment.get(\"brand_id\");",
+									"",
+									"if (!token) {",
+									"    console.error(\"❌ No access token found!\");",
+									"    console.log(\"Please run '1. Get Access Token' first\");",
+									"}",
+									"",
+									"if (!brandId) {",
+									"    console.error(\"❌ No brand_id set!\");",
+									"    console.log(\"Please set brand_id in environment variables\");",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}",
+								"type": "text"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "User-Agent",
+								"value": "{{user_agent}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/brands/{{brand_id}}",
+							"host": ["{{base_url}}"],
+							"path": ["brands", "{{brand_id}}"]
+						},
+						"description": "Get detailed information about a specific brand including name, status, and configuration."
+					},
+					"response": []
+				}
+			],
+			"description": "Endpoints for managing and retrieving brand information."
+		},
+		{
+			"name": "Branch Management",
+			"item": [
+				{
+					"name": "4. Get All Branches",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Response is JSON\", function () {",
+									"    pm.response.to.be.json;",
+									"});",
+									"",
+									"// Log response for debugging",
+									"console.log(\"Branches Response:\", pm.response.json());"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"// Check if access token exists",
+									"const token = pm.environment.get(\"access_token\");",
+									"if (!token) {",
+									"    console.error(\"❌ No access token found!\");",
+									"    console.log(\"Please run '1. Get Access Token' first\");",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}",
+								"type": "text"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "User-Agent",
+								"value": "{{user_agent}}",
+								"type": "text"
+							},
+							{
+								"key": "Brand-Id",
+								"value": "{{brand_id}}",
+								"type": "text",
+								"description": "Required for branch operations"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/branches",
+							"host": ["{{base_url}}"],
+							"path": ["branches"]
+						},
+						"description": "Retrieve list of all branches for the specified brand."
+					},
+					"response": []
+				},
+				{
+					"name": "5. Get Branch Details",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Response is JSON\", function () {",
+									"    pm.response.to.be.json;",
+									"});",
+									"",
+									"var jsonData = pm.response.json();",
+									"",
+									"pm.test(\"Response has branch_id\", function () {",
+									"    pm.expect(jsonData).to.have.property('branch_id');",
+									"});",
+									"",
+									"// Log response for debugging",
+									"console.log(\"Branch Details:\", jsonData);"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"// Check if access token exists",
+									"const token = pm.environment.get(\"access_token\");",
+									"const branchId = pm.environment.get(\"branch_id\");",
+									"",
+									"if (!token) {",
+									"    console.error(\"❌ No access token found!\");",
+									"    console.log(\"Please run '1. Get Access Token' first\");",
+									"}",
+									"",
+									"if (!branchId) {",
+									"    console.error(\"❌ No branch_id set!\");",
+									"    console.log(\"Please set branch_id in environment variables\");",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}",
+								"type": "text"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "User-Agent",
+								"value": "{{user_agent}}",
+								"type": "text"
+							},
+							{
+								"key": "Brand-Id",
+								"value": "{{brand_id}}",
+								"type": "text"
+							},
+							{
+								"key": "Branch-Id",
+								"value": "{{branch_id}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/branches/{{branch_id}}",
+							"host": ["{{base_url}}"],
+							"path": ["branches", "{{branch_id}}"]
+						},
+						"description": "Get detailed information about a specific branch including location, contact info, and settings."
+					},
+					"response": []
+				},
+				{
+					"name": "6. Get Branch POS Integration Status",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Response is JSON\", function () {",
+									"    pm.response.to.be.json;",
+									"});",
+									"",
+									"var jsonData = pm.response.json();",
+									"",
+									"pm.test(\"Response has status field\", function () {",
+									"    pm.expect(jsonData).to.have.property('status');",
+									"});",
+									"",
+									"// Log response for debugging",
+									"console.log(\"POS Integration Status:\", jsonData);",
+									"",
+									"if (jsonData.status) {",
+									"    console.log(\"Current Status: \" + jsonData.status);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"// Check if access token exists",
+									"const token = pm.environment.get(\"access_token\");",
+									"const branchId = pm.environment.get(\"branch_id\");",
+									"",
+									"if (!token) {",
+									"    console.error(\"❌ No access token found!\");",
+									"    console.log(\"Please run '1. Get Access Token' first\");",
+									"}",
+									"",
+									"if (!branchId) {",
+									"    console.error(\"❌ No branch_id set!\");",
+									"    console.log(\"Please set branch_id in environment variables\");",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}",
+								"type": "text"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "User-Agent",
+								"value": "{{user_agent}}",
+								"type": "text"
+							},
+							{
+								"key": "Brand-Id",
+								"value": "{{brand_id}}",
+								"type": "text"
+							},
+							{
+								"key": "Branch-Id",
+								"value": "{{branch_id}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/branches/{{branch_id}}/status",
+							"host": ["{{base_url}}"],
+							"path": ["branches", "{{branch_id}}", "status"]
+						},
+						"description": "Get the POS integration status for a branch. Shows whether the branch is connected to the POS system and accepting orders."
+					},
+					"response": []
+				},
+				{
+					"name": "7. Get Branch Visibility Status",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Response is JSON\", function () {",
+									"    pm.response.to.be.json;",
+									"});",
+									"",
+									"var jsonData = pm.response.json();",
+									"",
+									"pm.test(\"Response has visibility status\", function () {",
+									"    pm.expect(jsonData).to.have.property('is_visible');",
+									"});",
+									"",
+									"// Log response for debugging",
+									"console.log(\"Branch Visibility:\", jsonData);",
+									"",
+									"if (jsonData.is_visible !== undefined) {",
+									"    console.log(\"Branch is \" + (jsonData.is_visible ? \"ONLINE\" : \"OFFLINE\"));",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"// Check if access token exists",
+									"const token = pm.environment.get(\"access_token\");",
+									"const branchId = pm.environment.get(\"branch_id\");",
+									"",
+									"if (!token) {",
+									"    console.error(\"❌ No access token found!\");",
+									"    console.log(\"Please run '1. Get Access Token' first\");",
+									"}",
+									"",
+									"if (!branchId) {",
+									"    console.error(\"❌ No branch_id set!\");",
+									"    console.log(\"Please set branch_id in environment variables\");",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}",
+								"type": "text"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "User-Agent",
+								"value": "{{user_agent}}",
+								"type": "text"
+							},
+							{
+								"key": "Brand-Id",
+								"value": "{{brand_id}}",
+								"type": "text"
+							},
+							{
+								"key": "Branch-Id",
+								"value": "{{branch_id}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/branches/{{branch_id}}/visibility/status",
+							"host": ["{{base_url}}"],
+							"path": ["branches", "{{branch_id}}", "visibility", "status"]
+						},
+						"description": "Check if the branch is currently visible (online) or hidden (offline) on the Careem platform."
+					},
+					"response": []
+				},
+				{
+					"name": "8. Get Branch Visibility Expiry",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Response is JSON\", function () {",
+									"    pm.response.to.be.json;",
+									"});",
+									"",
+									"var jsonData = pm.response.json();",
+									"",
+									"// Log response for debugging",
+									"console.log(\"Visibility Expiry Info:\", jsonData);",
+									"",
+									"if (jsonData.expires_at) {",
+									"    console.log(\"Visibility expires at: \" + jsonData.expires_at);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"// Check if access token exists",
+									"const token = pm.environment.get(\"access_token\");",
+									"const branchId = pm.environment.get(\"branch_id\");",
+									"",
+									"if (!token) {",
+									"    console.error(\"❌ No access token found!\");",
+									"    console.log(\"Please run '1. Get Access Token' first\");",
+									"}",
+									"",
+									"if (!branchId) {",
+									"    console.error(\"❌ No branch_id set!\");",
+									"    console.log(\"Please set branch_id in environment variables\");",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}",
+								"type": "text"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "User-Agent",
+								"value": "{{user_agent}}",
+								"type": "text"
+							},
+							{
+								"key": "Brand-Id",
+								"value": "{{brand_id}}",
+								"type": "text"
+							},
+							{
+								"key": "Branch-Id",
+								"value": "{{branch_id}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/branches/{{branch_id}}/visibility/status/expiries",
+							"host": ["{{base_url}}"],
+							"path": ["branches", "{{branch_id}}", "visibility", "status", "expiries"]
+						},
+						"description": "Get information about when the current visibility status will expire (for temporary offline/online status)."
+					},
+					"response": []
+				}
+			],
+			"description": "Endpoints for managing and monitoring branch status and visibility."
+		},
+		{
+			"name": "Catalog Status",
+			"item": [
+				{
+					"name": "9. Check Catalog Upload Status",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Response is JSON\", function () {",
+									"    pm.response.to.be.json;",
+									"});",
+									"",
+									"var jsonData = pm.response.json();",
+									"",
+									"pm.test(\"Response has status field\", function () {",
+									"    pm.expect(jsonData).to.have.property('status');",
+									"});",
+									"",
+									"// Log response for debugging",
+									"console.log(\"Catalog Status:\", jsonData);",
+									"",
+									"if (jsonData.status) {",
+									"    console.log(\"Status: \" + jsonData.status);",
+									"    ",
+									"    // Color-coded status output",
+									"    switch(jsonData.status) {",
+									"        case 'accepted':",
+									"            console.log(\"✅ Catalog successfully processed\");",
+									"            break;",
+									"        case 'processing':",
+									"            console.log(\"⏳ Catalog is being processed\");",
+									"            break;",
+									"        case 'pending':",
+									"            console.log(\"⏸️ Catalog is pending processing\");",
+									"            break;",
+									"        case 'failed':",
+									"            console.log(\"❌ Catalog processing failed\");",
+									"            break;",
+									"        default:",
+									"            console.log(\"ℹ️ Unknown status: \" + jsonData.status);",
+									"    }",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"// Check if access token exists",
+									"const token = pm.environment.get(\"access_token\");",
+									"const requestId = pm.environment.get(\"request_id\");",
+									"",
+									"if (!token) {",
+									"    console.error(\"❌ No access token found!\");",
+									"    console.log(\"Please run '1. Get Access Token' first\");",
+									"}",
+									"",
+									"if (!requestId) {",
+									"    console.warn(\"⚠️ No request_id set!\");",
+									"    console.log(\"You'll need to manually replace {request_id} in the URL\");",
+									"    console.log(\"Or set request_id in environment variables\");",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}",
+								"type": "text"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "User-Agent",
+								"value": "{{user_agent}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/catalogs/status/{{request_id}}",
+							"host": ["{{base_url}}"],
+							"path": ["catalogs", "status", "{{request_id}}"]
+						},
+						"description": "Check the processing status of a catalog upload using the request_id returned from the catalog PUT request.\n\nPossible status values:\n- `pending` - Submitted, awaiting processing\n- `processing` - Being processed\n- `accepted` - Successfully processed\n- `failed` - Processing failed"
+					},
+					"response": []
+				}
+			],
+			"description": "Endpoints for checking catalog synchronization status."
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					"// Global pre-request script",
+					"// Check if token is expired",
+					"const expiresAt = pm.environment.get(\"token_expires_at\");",
+					"if (expiresAt && Date.now() >= expiresAt) {",
+					"    console.warn(\"⚠️ Access token has expired. Please get a new token.\");",
+					"}"
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					"// Global test script",
+					"// Log response time",
+					"console.log(\"Response time: \" + pm.response.responseTime + \"ms\");"
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "https://apigateway-stg.careemdash.com/pos/api/v1",
+			"type": "string"
+		},
+		{
+			"key": "token_url",
+			"value": "https://identity.qa.careem-engineering.com/token",
+			"type": "string"
+		}
+	]
+}

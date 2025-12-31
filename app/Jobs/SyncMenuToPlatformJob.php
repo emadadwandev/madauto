@@ -183,7 +183,7 @@ class SyncMenuToPlatformJob implements ShouldQueue
         $branch = $menu->locations()->first()?->careemBranch;
         $brandId = $branch?->brand?->careem_brand_id;
         $branchId = $branch?->careem_branch_id;
-        
+
         // Generate catalogId from menu and branch (or use existing if stored)
         $catalogId = $menu->careem_catalog_id ?? 'catalog_' . $menu->id . '_' . ($branchId ?? 'default');
 
@@ -214,8 +214,8 @@ class SyncMenuToPlatformJob implements ShouldQueue
             'categories_count' => count($catalogData['categories'] ?? []),
         ]);
 
-        // Submit to Careem
-        $result = $apiService->submitCatalog($catalogData, $brandId, $branchId, $catalogId);
+        // Submit to Careem (catalogId is now in the payload, not a parameter)
+        $result = $apiService->submitCatalog($catalogData, $brandId, $branchId);
 
         // Log the API response
         Log::info('Careem API response received', [
@@ -224,13 +224,79 @@ class SyncMenuToPlatformJob implements ShouldQueue
             'result' => $result,
         ]);
 
+        // Sync operational hours if location has opening_hours configured
+        $location = $menu->locations()->first();
+        if ($location && !empty($location->opening_hours) && $brandId && $branchId) {
+            try {
+                Log::info('Syncing operational hours to Careem', [
+                    'menu_id' => $menu->id,
+                    'location_id' => $location->id,
+                    'brand_id' => $brandId,
+                    'branch_id' => $branchId,
+                ]);
+
+                // Transform opening hours to Careem format
+                $operationalHours = $transformer->transformOperationalHours($location->opening_hours);
+
+                Log::debug('Operational hours transformed', [
+                    'menu_id' => $menu->id,
+                    'location_id' => $location->id,
+                    'input_hours' => $location->opening_hours,
+                    'output_hours' => $operationalHours,
+                ]);
+
+                // Sync to Careem
+                $hoursResult = $apiService->setBranchOperationalHours($brandId, $branchId, $operationalHours);
+
+                Log::info('Operational hours synced successfully', [
+                    'menu_id' => $menu->id,
+                    'location_id' => $location->id,
+                    'shifts_count' => count($operationalHours),
+                    'result' => $hoursResult,
+                ]);
+            } catch (\Exception $e) {
+                // Log but don't fail the entire sync
+                $errorCode = $e->getCode();
+                $errorMessage = $e->getMessage();
+
+                // Add helpful context for common issues
+                if ($errorCode === 500) {
+                    Log::warning('Operational hours sync returned 500 error - likely Careem API or branch configuration issue', [
+                        'menu_id' => $menu->id,
+                        'location_id' => $location->id ?? null,
+                        'brand_id' => $brandId,
+                        'branch_id' => $branchId,
+                        'recommendation' => 'Check if branch is fully mapped/configured in Careem system, or contact Careem support',
+                    ]);
+                }
+
+                Log::error('Failed to sync operational hours to Careem', [
+                    'menu_id' => $menu->id,
+                    'location_id' => $location->id ?? null,
+                    'brand_id' => $brandId,
+                    'branch_id' => $branchId,
+                    'status_code' => $errorCode,
+                    'error' => $errorMessage,
+                    'trace' => $e->getTraceAsString(),
+                ]);
+            }
+        } else {
+            Log::info('Skipping operational hours sync', [
+                'menu_id' => $menu->id,
+                'has_location' => (bool) $location,
+                'has_opening_hours' => !empty($location->opening_hours ?? null),
+                'has_brand_id' => (bool) $brandId,
+                'has_branch_id' => (bool) $branchId,
+            ]);
+        }
+
         // Store request_id for status checking
         $requestId = $result['data']['request_id'] ?? $result['catalog_id'] ?? null;
 
         if ($requestId) {
             // Check catalog status (Careem processes async)
             try {
-                $statusResult = $apiService->getCatalogStatus($requestId);
+                $statusResult = $apiService->getCatalogStatus($requestId, $brandId, $branchId);
 
                 // Status can be: pending, processing, accepted, rejected
                 $status = $statusResult['status'] ?? 'unknown';

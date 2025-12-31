@@ -280,6 +280,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     // Orders
     Route::get('/orders', [OrderController::class, 'index'])->name('orders.index');
+    Route::get('/orders/{order}', [OrderController::class, 'show'])->name('orders.show');
+    Route::post('/orders/fetch-from-careem', [OrderController::class, 'fetchFromCareem'])->name('orders.fetch-from-careem');
+    Route::post('/orders/{order}/accept', [OrderController::class, 'accept'])->name('orders.accept');
+    Route::post('/orders/{order}/mark-ready', [OrderController::class, 'markReady'])->name('orders.mark-ready');
+    Route::post('/orders/{order}/cancel', [OrderController::class, 'cancel'])->name('orders.cancel');
 
     // Locations
     Route::prefix('dashboard/locations')->name('dashboard.locations.')->group(function () {
@@ -315,6 +320,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // Careem Branch Management
     Route::prefix('dashboard/careem-branches')->name('dashboard.careem-branches.')->group(function () {
         Route::get('/', [\App\Http\Controllers\Dashboard\CareemBranchController::class, 'index'])->name('index');
+        Route::post('/sync-all', [\App\Http\Controllers\Dashboard\CareemBranchController::class, 'syncAllFromCareem'])->name('sync-all');
         Route::get('/create', [\App\Http\Controllers\Dashboard\CareemBranchController::class, 'create'])->name('create');
         Route::post('/', [\App\Http\Controllers\Dashboard\CareemBranchController::class, 'store'])->name('store');
         Route::get('/{careemBranch}/edit', [\App\Http\Controllers\Dashboard\CareemBranchController::class, 'edit'])->name('edit');
