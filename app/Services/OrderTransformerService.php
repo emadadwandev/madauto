@@ -99,9 +99,14 @@ class OrderTransformerService
                 if (! empty($originalItem['special_instructions'])) {
                     $lineNotes[] = $originalItem['special_instructions'];
                 }
+                // Check for enriched modifiers (added by OrderModifierEnrichmentService)
                 if (! empty($originalItem['modifiers'])) {
                     foreach ($originalItem['modifiers'] as $modifier) {
-                        $lineNotes[] = $modifier['name'] ?? 'Modifier';
+                        $name = $modifier['name'] ?? 'Modifier';
+                        $price = $modifier['price'] ?? 0;
+                        // Include price in note if modifier has a price
+                        $priceStr = $price > 0 ? " (+{$price})" : '';
+                        $lineNotes[] = "{$name}{$priceStr}";
                     }
                 }
                 if (! empty($lineNotes)) {
@@ -152,7 +157,7 @@ class OrderTransformerService
                     ? date('c', strtotime($orderData['created_at']))
                     : now()->toIso8601String(),
                 'note' => "{$platformName} Order: ".($orderPayload['order_id'] ?? 'N/A'),
-                'source' => config('loyverse.receipt_defaults.source', 'API'),
+                'source' => 'Careem Integration System', // CIS as per requirements
                 'dining_option' => config('loyverse.receipt_defaults.dining_option', 'DELIVERY'),
                 'customer_id' => $customer['id'],
                 'line_items' => $lineItems,
@@ -164,11 +169,14 @@ class OrderTransformerService
                 ],
             ];
 
-            // Add optional fields if configured
-            if ($storeId = config('loyverse.store_id')) {
-                $receipt['store_id'] = $storeId;
+            // Add store_id from tenant settings (required)
+            $storeId = tenant()->loyverse_store_id;
+            if (empty($storeId)) {
+                throw new \Exception('Loyverse store not selected. Please select a store in API Credentials settings.');
             }
+            $receipt['store_id'] = $storeId;
 
+            // Add optional fields if configured
             if ($posDeviceId = config('loyverse.pos_device_id')) {
                 $receipt['pos_device_id'] = $posDeviceId;
             }
@@ -187,6 +195,7 @@ class OrderTransformerService
                         'mapped_items_count' => count($mappedItems),
                         'unmapped_items_count' => count($unmappedItems),
                         'total_amount' => $receipt['payments'][0]['amount'],
+                        'store_id' => $storeId,
                     ]
                 );
             }

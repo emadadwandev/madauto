@@ -329,4 +329,70 @@ class ApiCredentialController extends Controller
             return back()->with('error', 'Talabat connection test failed: '.$e->getMessage());
         }
     }
+
+    /**
+     * Fetch stores from Loyverse API
+     */
+    public function fetchStores(string $subdomain)
+    {
+        try {
+            $stores = $this->loyverseApiService->getStores();
+
+            if (empty($stores)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No stores found in your Loyverse account',
+                ], 404);
+            }
+
+            return response()->json([
+                'success' => true,
+                'stores' => $stores,
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Failed to fetch Loyverse stores', [
+                'error' => $e->getMessage(),
+                'tenant_id' => tenant()->id,
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to fetch stores: '.$e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * Set selected Loyverse store for order syncing
+     */
+    public function setStore(Request $request, string $subdomain)
+    {
+        $validated = $request->validate([
+            'store_id' => 'required|string',
+        ]);
+
+        try {
+            // Verify the store exists in Loyverse
+            $store = $this->loyverseApiService->getStore($validated['store_id']);
+
+            if (! $store) {
+                return back()->with('error', 'Selected store not found in Loyverse');
+            }
+
+            // Update tenant with selected store ID
+            tenant()->update([
+                'loyverse_store_id' => $validated['store_id'],
+            ]);
+
+            return back()->with('success', 'Loyverse store selected successfully: '.$store['name']);
+        } catch (\Exception $e) {
+            Log::error('Failed to set Loyverse store', [
+                'error' => $e->getMessage(),
+                'tenant_id' => tenant()->id,
+                'store_id' => $validated['store_id'],
+            ]);
+
+            return back()->with('error', 'Failed to set store: '.$e->getMessage());
+        }
+    }
 }

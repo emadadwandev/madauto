@@ -3,8 +3,8 @@
 namespace App\Http\Controllers\Dashboard;
 
 use App\Http\Controllers\Controller;
-use App\Models\Order;
 use App\Models\CareemBranch;
+use App\Models\Order;
 use App\Services\CareemApiService;
 use Illuminate\Support\Facades\Log;
 
@@ -41,11 +41,13 @@ class OrderController extends Controller
                 try {
                     if (empty($branch->brand->careem_brand_id)) {
                         $errors[] = "Branch '{$branch->name}' has no brand ID";
+
                         continue;
                     }
 
                     if (empty($branch->careem_branch_id)) {
                         $errors[] = "Branch '{$branch->name}' has no branch ID";
+
                         continue;
                     }
 
@@ -66,22 +68,62 @@ class OrderController extends Controller
 
                     $orders = $response['data'] ?? [];
 
-                    foreach ($orders as $orderData) {
-                        // Store order if not already exists
-                        Order::firstOrCreate(
-                            [
-                                'tenant_id' => tenant()->id,
-                                'careem_order_id' => $orderData['id'],
-                            ],
-                            [
-                                'platform' => 'careem',
-                                'status' => $orderData['state'] ?? 'pending',
-                                'platform_status' => $orderData['state'] ?? null,
-                                'order_data' => $orderData,
-                                'created_at' => $orderData['created_at'] ?? now(),
-                            ]
-                        );
-                        $totalFetched++;
+                    foreach ($orders as $orderSummary) {
+                        try {
+                            $orderId = $orderSummary['id'] ?? null;
+
+                            if (! $orderId) {
+                                Log::warning('Order missing ID, skipping', ['order' => $orderSummary]);
+
+                                continue;
+                            }
+
+                            // Fetch FULL order details including modifiers/groups
+                            // The listOrders endpoint returns summaries without item details
+                            $fullOrderData = $careemService->getOrder(
+                                (string) $orderId,
+                                $branch->brand->careem_brand_id,
+                                $branch->careem_branch_id
+                            );
+
+                            // Enrich order data with modifier names from database
+                            $enrichmentService = new \App\Services\OrderModifierEnrichmentService;
+                            $enrichedOrderData = $enrichmentService->enrichOrderData($fullOrderData, tenant()->id);
+
+                            // Map Careem status to our enum
+                            $careemStatus = $enrichedOrderData['status'] ?? 'pending';
+                            $ourStatus = match ($careemStatus) {
+                                'pending', 'new' => 'pending',
+                                'accepted', 'ready', 'picked_up' => 'processing',
+                                'delivered', 'completed' => 'synced',
+                                'cancelled', 'rejected' => 'failed',
+                                default => 'pending',
+                            };
+
+                            // Store order with full details (including enriched modifiers)
+                            Order::updateOrCreate(
+                                [
+                                    'tenant_id' => tenant()->id,
+                                    'careem_order_id' => $enrichedOrderData['id'],
+                                ],
+                                [
+                                    'platform' => 'careem',
+                                    'status' => $ourStatus,
+                                    'platform_status' => $careemStatus,
+                                    'order_data' => $enrichedOrderData, // Store FULL details with enriched modifiers
+                                    'created_at' => $enrichedOrderData['created_at'] ?? now(),
+                                ]
+                            );
+                            $totalFetched++;
+
+                        } catch (\Exception $orderException) {
+                            Log::error('Failed to fetch full order details', [
+                                'order_id' => $orderId ?? 'unknown',
+                                'branch_id' => $branch->id,
+                                'error' => $orderException->getMessage(),
+                            ]);
+                            // Continue with other orders even if one fails
+                        }
                     }
 
                 } catch (\Exception $e) {
@@ -95,8 +137,9 @@ class OrderController extends Controller
 
             $message = "Fetched {$totalFetched} order(s) from Careem";
 
-            if (!empty($errors)) {
-                $message .= " | Errors: " . implode('; ', $errors);
+            if (! empty($errors)) {
+                $message .= ' | Errors: '.implode('; ', $errors);
+
                 return back()->with('warning', $message);
             }
 
@@ -108,7 +151,7 @@ class OrderController extends Controller
                 'trace' => $e->getTraceAsString(),
             ]);
 
-            return back()->with('error', 'Failed to fetch orders: ' . $e->getMessage());
+            return back()->with('error', 'Failed to fetch orders: '.$e->getMessage());
         }
     }
 
@@ -118,6 +161,7 @@ class OrderController extends Controller
     public function show(string $subdomain, string $order)
     {
         $order = Order::with('loyverseOrder')->findOrFail($order);
+
         return view('dashboard.orders.show', compact('order'));
     }
 
@@ -141,7 +185,7 @@ class OrderController extends Controller
             $orderData = is_string($order->order_data) ? json_decode($order->order_data, true) : $order->order_data;
             $orderBranchId = $orderData['branch']['id'] ?? null;
 
-            if (!$orderBranchId) {
+            if (! $orderBranchId) {
                 return back()->with('error', 'Order does not have branch information.');
             }
 
@@ -150,11 +194,11 @@ class OrderController extends Controller
                 ->where('careem_branch_id', $orderBranchId)
                 ->first();
 
-            if (!$branch) {
-                return back()->with('error', 'Branch not found for this order. Branch ID: ' . $orderBranchId);
+            if (! $branch) {
+                return back()->with('error', 'Branch not found for this order. Branch ID: '.$orderBranchId);
             }
 
-            if (!$branch->brand || !$branch->brand->careem_brand_id) {
+            if (! $branch->brand || ! $branch->brand->careem_brand_id) {
                 return back()->with('error', 'Branch does not have a brand associated.');
             }
 
@@ -185,7 +229,7 @@ class OrderController extends Controller
                 'error' => $e->getMessage(),
             ]);
 
-            return back()->with('error', 'Failed to accept order: ' . $e->getMessage());
+            return back()->with('error', 'Failed to accept order: '.$e->getMessage());
         }
     }
 
@@ -213,7 +257,7 @@ class OrderController extends Controller
             $orderData = is_string($order->order_data) ? json_decode($order->order_data, true) : $order->order_data;
             $orderBranchId = $orderData['branch']['id'] ?? null;
 
-            if (!$orderBranchId) {
+            if (! $orderBranchId) {
                 return back()->with('error', 'Order does not have branch information.');
             }
 
@@ -222,11 +266,11 @@ class OrderController extends Controller
                 ->where('careem_branch_id', $orderBranchId)
                 ->first();
 
-            if (!$branch) {
-                return back()->with('error', 'Branch not found for this order. Branch ID: ' . $orderBranchId);
+            if (! $branch) {
+                return back()->with('error', 'Branch not found for this order. Branch ID: '.$orderBranchId);
             }
 
-            if (!$branch->brand || !$branch->brand->careem_brand_id) {
+            if (! $branch->brand || ! $branch->brand->careem_brand_id) {
                 return back()->with('error', 'Branch does not have a brand associated.');
             }
 
@@ -249,7 +293,7 @@ class OrderController extends Controller
 
                 // Verify order is in accepted state on Careem's side
                 if (($currentOrderData['status'] ?? null) !== 'accepted') {
-                    return back()->with('error', 'Order is not in "accepted" state on Careem. Current state: ' . ($currentOrderData['status'] ?? 'unknown') . '. Please wait a few moments and try again.');
+                    return back()->with('error', 'Order is not in "accepted" state on Careem. Current state: '.($currentOrderData['status'] ?? 'unknown').'. Please wait a few moments and try again.');
                 }
             } catch (\Exception $e) {
                 Log::warning('Could not fetch order state from Careem before marking ready', [
@@ -297,7 +341,7 @@ class OrderController extends Controller
                 $errorMsg .= ' | Note: This might be a Careem API staging environment limitation or your account/branch might not have the "ready" state enabled. Contact Careem support if this persists.';
             }
 
-            return back()->with('error', 'Failed to mark order ready: ' . $errorMsg);
+            return back()->with('error', 'Failed to mark order ready: '.$errorMsg);
         }
     }
 
@@ -317,7 +361,7 @@ class OrderController extends Controller
             $orderData = is_string($order->order_data) ? json_decode($order->order_data, true) : $order->order_data;
             $orderBranchId = $orderData['branch']['id'] ?? null;
 
-            if (!$orderBranchId) {
+            if (! $orderBranchId) {
                 return back()->with('error', 'Order does not have branch information.');
             }
 
@@ -326,11 +370,11 @@ class OrderController extends Controller
                 ->where('careem_branch_id', $orderBranchId)
                 ->first();
 
-            if (!$branch) {
-                return back()->with('error', 'Branch not found for this order. Branch ID: ' . $orderBranchId);
+            if (! $branch) {
+                return back()->with('error', 'Branch not found for this order. Branch ID: '.$orderBranchId);
             }
 
-            if (!$branch->brand || !$branch->brand->careem_brand_id) {
+            if (! $branch->brand || ! $branch->brand->careem_brand_id) {
                 return back()->with('error', 'Branch does not have a brand associated.');
             }
 
@@ -359,7 +403,7 @@ class OrderController extends Controller
                 'error' => $e->getMessage(),
             ]);
 
-            return back()->with('error', 'Failed to cancel order: ' . $e->getMessage());
+            return back()->with('error', 'Failed to cancel order: '.$e->getMessage());
         }
     }
 }

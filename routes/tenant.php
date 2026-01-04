@@ -367,6 +367,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('/', [ApiCredentialController::class, 'store'])->name('store');
         Route::post('/test-connection', [ApiCredentialController::class, 'testConnection'])->name('test-connection');
 
+        // Loyverse Store Selection
+        Route::get('/fetch-stores', [ApiCredentialController::class, 'fetchStores'])->name('fetch-stores');
+        Route::post('/set-store', [ApiCredentialController::class, 'setStore'])->name('set-store');
+
         // Platform Catalog API credentials
         Route::post('/careem-catalog', [ApiCredentialController::class, 'storeCareemCatalog'])->name('careem-catalog.store');
         Route::post('/careem-catalog/test', [ApiCredentialController::class, 'testCareemConnection'])->name('careem-catalog.test');

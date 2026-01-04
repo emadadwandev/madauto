@@ -54,6 +54,45 @@
                             </button>
                         </form>
                     </div>
+
+                    <!-- Store Selection -->
+                    <div class="mt-6 pt-6 border-t" id="storeSelectionSection" style="{{ tenant()->loyverse_store_id ? '' : 'display:none;' }}">
+                        <h4 class="text-md font-semibold mb-4">Select Loyverse Store for Order Syncing</h4>
+                        <p class="text-gray-600 text-sm mb-4">Orders from Careem will be synced to the selected store in Loyverse.</p>
+
+                        @if(tenant()->loyverse_store_id)
+                            <div class="bg-green-50 border border-green-200 rounded-lg p-4 mb-4">
+                                <p class="text-green-800 font-semibold">✓ Store Selected</p>
+                                <p class="text-green-700 text-sm" id="selectedStoreName">Store ID: {{ tenant()->loyverse_store_id }}</p>
+                            </div>
+                        @endif
+
+                        <button type="button" id="fetchStoresBtn" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+                            <span class="btn-text">Fetch Available Stores</span>
+                            <span class="loading-spinner hidden">
+                                <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                </svg>
+                                Loading...
+                            </span>
+                        </button>
+
+                        <div id="storesContainer" class="mt-4 hidden">
+                            <form method="POST" action="{{ route('api-credentials.set-store', ['subdomain' => request()->route('subdomain')]) }}">
+                                @csrf
+                                <div class="space-y-2">
+                                    <label class="block text-gray-700 text-sm font-bold mb-2">Select Store:</label>
+                                    <select name="store_id" id="storeSelect" class="shadow border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" required>
+                                        <option value="">-- Select a Store --</option>
+                                    </select>
+                                </div>
+                                <button type="submit" class="mt-4 bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded">
+                                    Set Selected Store
+                                </button>
+                            </form>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -526,4 +565,84 @@
             </div>
         </div>
     </div>
+
+    <!-- Store Selection JavaScript -->
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const testConnectionBtn = document.querySelector('button[type="submit"][class*="bg-green-500"]');
+        const storeSelectionSection = document.getElementById('storeSelectionSection');
+        const fetchStoresBtn = document.getElementById('fetchStoresBtn');
+        const storesContainer = document.getElementById('storesContainer');
+        const storeSelect = document.getElementById('storeSelect');
+
+        // Show store selection section after successful connection test
+        if (testConnectionBtn) {
+            testConnectionBtn.form.addEventListener('submit', function(e) {
+                // Let the form submit naturally
+                // The section will be shown on page reload if connection is successful
+            });
+        }
+
+        // Show store selection if token is saved
+        const loyverseTokenInput = document.getElementById('loyverse_access_token');
+        if (loyverseTokenInput && loyverseTokenInput.value) {
+            storeSelectionSection.style.display = 'block';
+        }
+
+        // Check if connection test was successful (look for success message)
+        const successMessage = document.querySelector('.bg-green-100');
+        if (successMessage && successMessage.textContent.includes('Loyverse API connection successful')) {
+            storeSelectionSection.style.display = 'block';
+        }
+
+        // Fetch stores button handler
+        fetchStoresBtn.addEventListener('click', function() {
+            const btnText = this.querySelector('.btn-text');
+            const btnSpinner = this.querySelector('.loading-spinner');
+
+            // Show loading state
+            btnText.classList.add('hidden');
+            btnSpinner.classList.remove('hidden');
+            this.disabled = true;
+
+            fetch('{{ route("api-credentials.fetch-stores", ["subdomain" => request()->route("subdomain")]) }}', {
+                method: 'GET',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Accept': 'application/json',
+                },
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success && data.stores && data.stores.length > 0) {
+                    // Clear existing options except first
+                    storeSelect.innerHTML = '<option value="">-- Select a Store --</option>';
+
+                    // Add stores to dropdown
+                    data.stores.forEach(store => {
+                        const option = document.createElement('option');
+                        option.value = store.id;
+                        option.textContent = store.name + (store.address ? ' - ' + store.address : '');
+                        storeSelect.appendChild(option);
+                    });
+
+                    // Show the container
+                    storesContainer.classList.remove('hidden');
+                } else {
+                    alert(data.message || 'No stores found. Please check your Loyverse connection.');
+                }
+            })
+            .catch(error => {
+                console.error('Error fetching stores:', error);
+                alert('Failed to fetch stores. Please ensure your Loyverse API token is valid and try testing the connection first.');
+            })
+            .finally(() => {
+                // Reset button state
+                btnText.classList.remove('hidden');
+                btnSpinner.classList.add('hidden');
+                fetchStoresBtn.disabled = false;
+            });
+        });
+    });
+    </script>
 </x-app-layout>

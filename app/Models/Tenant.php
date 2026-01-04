@@ -28,6 +28,7 @@ class Tenant extends Model
         'name',
         'subdomain',
         'careem_api_key',
+        'loyverse_store_id',
         'domain',
         'status',
         'settings',

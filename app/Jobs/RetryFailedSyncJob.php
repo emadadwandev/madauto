@@ -13,14 +13,14 @@ class RetryFailedSyncJob implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
-    protected $order;
+    protected int $orderId;
 
     /**
      * Create a new job instance.
      */
-    public function __construct(Order $order)
+    public function __construct(Order|int $order)
     {
-        $this->order = $order;
+        $this->orderId = $order instanceof Order ? $order->id : $order;
     }
 
     /**
@@ -28,8 +28,10 @@ class RetryFailedSyncJob implements ShouldQueue
      */
     public function handle(): void
     {
-        $this->order->update(['status' => 'pending']);
+        $order = Order::findOrFail($this->orderId);
 
-        SyncToLoyverseJob::dispatch($this->order);
+        $order->update(['status' => 'pending']);
+
+        SyncToLoyverseJob::dispatch($order);
     }
 }

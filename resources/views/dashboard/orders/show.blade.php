@@ -303,16 +303,26 @@
                                                     <div class="mt-2 space-y-1">
                                                         @foreach($itemModifiers as $modifier)
                                                         @php
-                                                            $modifierName = $modifier['name'] ?? $modifier['group_name'] ?? 'Modifier';
+                                                            $modifierName = $modifier['name'] ?? $modifier['group_name'] ?? null;
+                                                            $modifierId = $modifier['id'] ?? $modifier['group_id'] ?? null;
+                                                            $modifierDisplayName = $modifierName ?? ($modifierId ? "Modifier #$modifierId" : 'Modifier');
                                                             $modifierPrice = $modifier['price'] ?? $modifier['modifier_price'] ?? 0;
                                                             $modifierQty = $modifier['quantity'] ?? 1;
                                                             // Handle nested options within groups
                                                             $modifierOptions = $modifier['options'] ?? [];
                                                         @endphp
                                                         @if(!empty($modifierOptions))
-                                                            <p class="text-xs font-medium text-gray-700 mt-1">{{ $modifierName }}:</p>
+                                                            <p class="text-xs font-medium text-gray-700 mt-1">{{ $modifierDisplayName }}:</p>
                                                             @foreach($modifierOptions as $option)
-                                                            <p class="text-xs text-gray-600 ml-2">+ {{ $option['name'] ?? 'Option' }}
+                                                            @php
+                                                                // Try multiple fields for option name/id
+                                                                $optionName = $option['name'] ?? $option['option_name'] ?? null;
+                                                                $optionId = $option['id'] ?? $option['option_id'] ?? null;
+
+                                                                // If no name, try to display ID or show as "Option"
+                                                                $displayName = $optionName ?? ($optionId ? "Option #$optionId" : 'Option');
+                                                            @endphp
+                                                            <p class="text-xs text-gray-600 ml-2">+ {{ $displayName }}
                                                                 @if(isset($option['price']) && $option['price'] > 0)
                                                                 (+{{ number_format($option['price'], 2) }})
                                                                 @endif
@@ -322,7 +332,7 @@
                                                             </p>
                                                             @endforeach
                                                         @else
-                                                            <p class="text-xs text-gray-600">+ {{ $modifierName }}
+                                                            <p class="text-xs text-gray-600">+ {{ $modifierDisplayName }}
                                                                 @if($modifierPrice > 0)
                                                                 (+{{ number_format($modifierPrice, 2) }})
                                                                 @endif

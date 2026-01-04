@@ -18,16 +18,26 @@ class SyncToLoyverseJob implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
-    protected $order;
+    protected int $orderId;
+
+    protected string $tenantId;
 
     public $timeout = 60;
 
     /**
      * Create a new job instance.
      */
-    public function __construct(Order $order)
+    public function __construct(Order|int $order)
     {
-        $this->order = $order;
+        // Accept either Order model or order ID
+        if ($order instanceof Order) {
+            $this->orderId = $order->id;
+            $this->tenantId = $order->tenant_id;
+        } else {
+            $this->orderId = $order;
+            // Tenant ID will be fetched when loading the order
+            $this->tenantId = tenant()->id ?? null;
+        }
     }
 
     /**
@@ -36,17 +46,20 @@ class SyncToLoyverseJob implements ShouldQueue
     public function handle(LoyverseApiService $loyverseApiService, OrderTransformerService $orderTransformerService): void
     {
         try {
+            // Fetch the order from database
+            $order = Order::findOrFail($this->orderId);
+
             // Update order status to processing
-            $this->order->update(['status' => 'processing']);
+            $order->update(['status' => 'processing']);
 
             // Transform order (this will log transformation steps)
-            $transformedOrder = $orderTransformerService->transform($this->order->order_data, $this->order->id);
+            $transformedOrder = $orderTransformerService->transform($order->order_data, $order->id);
 
             // Create receipt in Loyverse
             $loyverseOrder = $loyverseApiService->createReceipt($transformedOrder);
 
             // Store Loyverse order details
-            $this->order->loyverseOrder()->create([
+            $order->loyverseOrder()->create([
                 'loyverse_order_id' => $loyverseOrder['id'],
                 'loyverse_receipt_number' => $loyverseOrder['receipt_number'] ?? null,
                 'sync_status' => 'success',
@@ -55,11 +68,11 @@ class SyncToLoyverseJob implements ShouldQueue
             ]);
 
             // Update order status
-            $this->order->update(['status' => 'synced']);
+            $order->update(['status' => 'synced']);
 
             // Log success
             \App\Models\SyncLog::logSuccess(
-                $this->order->id,
+                $order->id,
                 'loyverse_sync',
                 'Order synced to Loyverse successfully',
                 [
@@ -69,15 +82,16 @@ class SyncToLoyverseJob implements ShouldQueue
             );
 
             // Track usage for subscription limits
-            if ($this->order->tenant_id) {
+            if ($order->tenant_id) {
                 $usageTrackingService = app(UsageTrackingService::class);
-                $usageTrackingService->recordOrder($this->order->tenant);
+                $usageTrackingService->recordOrder($order->tenant);
             }
 
             // Mark order as ready in Careem (if auto-mark-ready is enabled)
-            $platform = $this->order->order_data['platform'] ?? null;
+            $platform = $order->order_data['platform'] ?? null;
             if ($platform === 'careem') {
-                MarkCareemOrderReadyJob::dispatch($this->order)->delay(now()->addSeconds(5));
+                // Delay for 15 seconds to give Careem time to process the acceptance
+                MarkCareemOrderReadyJob::dispatch($order)->delay(now()->addSeconds(15));
             }
 
         } catch (\App\Exceptions\LoyverseApiException $e) {
@@ -94,9 +108,17 @@ class SyncToLoyverseJob implements ShouldQueue
      */
     protected function handleLoyverseApiException(\App\Exceptions\LoyverseApiException $e): void
     {
+        // Fetch order for error handling
+        $order = Order::find($this->orderId);
+        if (! $order) {
+            \Log::error('Order not found in handleLoyverseApiException', ['order_id' => $this->orderId]);
+
+            return;
+        }
+
         // Log the failure
         \App\Models\SyncLog::logFailure(
-            $this->order->id,
+            $order->id,
             'loyverse_sync',
             'Loyverse API error: '.$e->getMessage(),
             [
@@ -107,7 +129,7 @@ class SyncToLoyverseJob implements ShouldQueue
         );
 
         // Store failed sync attempt
-        $this->order->loyverseOrder()->create([
+        $order->loyverseOrder()->create([
             'sync_status' => 'failed',
             'sync_response' => [
                 'error' => $e->getMessage(),
@@ -117,14 +139,14 @@ class SyncToLoyverseJob implements ShouldQueue
         ]);
 
         // Update order status
-        $this->order->update(['status' => 'failed']);
+        $order->update(['status' => 'failed']);
 
         // Send email notification if tenant has notifications enabled
-        if ($this->order->tenant && $this->order->tenant->getSetting('notify_on_failed_sync', true)) {
+        if ($order->tenant && $order->tenant->getSetting('notify_on_failed_sync', true)) {
             try {
-                $recipient = $this->order->tenant->users()->first();
+                $recipient = $order->tenant->users()->first();
                 if ($recipient) {
-                    Mail::to($recipient->email)->send(new SyncFailedEmail($this->order, $e->getMessage()));
+                    Mail::to($recipient->email)->send(new SyncFailedEmail($order, $e->getMessage()));
                 }
             } catch (\Exception $mailException) {
                 \Log::error('Failed to send sync failure email', ['error' => $mailException->getMessage()]);
@@ -153,9 +175,16 @@ class SyncToLoyverseJob implements ShouldQueue
      */
     protected function handleGeneralException(\Exception $e): void
     {
+        // Fetch order for error handling
+        $order = Order::find($this->orderId);
+        if (! $order) {
+            \Log::error('Order not found in handleGeneralException', ['order_id' => $this->orderId]);
+            throw $e;
+        }
+
         // Log the failure
         \App\Models\SyncLog::logFailure(
-            $this->order->id,
+            $order->id,
             'loyverse_sync',
             'Sync failed: '.$e->getMessage(),
             [
@@ -165,7 +194,7 @@ class SyncToLoyverseJob implements ShouldQueue
         );
 
         // Store failed sync attempt
-        $this->order->loyverseOrder()->create([
+        $order->loyverseOrder()->create([
             'sync_status' => 'failed',
             'sync_response' => [
                 'error' => $e->getMessage(),
@@ -173,14 +202,14 @@ class SyncToLoyverseJob implements ShouldQueue
         ]);
 
         // Update order status
-        $this->order->update(['status' => 'failed']);
+        $order->update(['status' => 'failed']);
 
         // Send email notification if tenant has notifications enabled
-        if ($this->order->tenant && $this->order->tenant->getSetting('notify_on_failed_sync', true)) {
+        if ($order->tenant && $order->tenant->getSetting('notify_on_failed_sync', true)) {
             try {
-                $recipient = $this->order->tenant->users()->first();
+                $recipient = $order->tenant->users()->first();
                 if ($recipient) {
-                    Mail::to($recipient->email)->send(new SyncFailedEmail($this->order, $e->getMessage()));
+                    Mail::to($recipient->email)->send(new SyncFailedEmail($order, $e->getMessage()));
                 }
             } catch (\Exception $mailException) {
                 \Log::error('Failed to send sync failure email', ['error' => $mailException->getMessage()]);

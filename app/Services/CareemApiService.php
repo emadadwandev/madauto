@@ -25,6 +25,8 @@ class CareemApiService
 
     protected ?string $clientName = null;
 
+    protected ?string $apiKey = null;
+
     protected string $scope;
 
     protected string $userAgent;
@@ -58,6 +60,7 @@ class CareemApiService
             $this->clientId = $credentials['client_id'];
             $this->clientSecret = $credentials['client_secret'];
             $this->clientName = $credentials['client_name'] ?? null;
+            $this->apiKey = $credentials['api_key'] ?? null;
             $this->baseUrl = $credentials['api_url'] ?? $this->baseUrl;
             $this->tokenUrl = $credentials['token_url'] ?? $this->tokenUrl;
 
@@ -73,7 +76,7 @@ class CareemApiService
             $this->userAgent = config('platforms.careem.user_agent', 'loyverse-integration/1.0');
 
             // Allow empty credentials during app bootstrap (migrations, etc)
-            if (!app()->runningInConsole() && (empty($this->clientId) || empty($this->clientSecret))) {
+            if (! app()->runningInConsole() && (empty($this->clientId) || empty($this->clientSecret))) {
                 throw new \Exception('Careem API credentials not configured. Please configure tenant-specific credentials in Settings.');
             }
         }
@@ -205,6 +208,11 @@ class CareemApiService
                 'Branch-Id' => $branchId,  // REQUIRED by Careem API
             ];
 
+            // Add x-careem-api-key header if configured
+            if ($this->apiKey) {
+                $headers['x-careem-api-key'] = $this->apiKey;
+            }
+
             $response = Http::timeout($this->timeout)
                 ->withToken($token)
                 ->withHeaders($headers)
@@ -281,7 +289,6 @@ class CareemApiService
                 'raw_body' => $response->body(),
             ]);
             throw $exception;
-
         } catch (PlatformApiException $e) {
             throw $e;
         } catch (\Exception $e) {
@@ -1497,15 +1504,22 @@ class CareemApiService
         ]);
 
         try {
+            $headers = [
+                'Content-Type' => 'application/json',
+                'Accept' => 'application/json',
+                'User-Agent' => $this->userAgent,
+                'Brand-Id' => $brandId,
+                'Branch-Id' => $branchId,
+            ];
+
+            // Add x-careem-api-key header if configured
+            if ($this->apiKey) {
+                $headers['x-careem-api-key'] = $this->apiKey;
+            }
+
             $response = Http::timeout($this->timeout)
                 ->withToken($token)
-                ->withHeaders([
-                    'Content-Type' => 'application/json',
-                    'Accept' => 'application/json',
-                    'User-Agent' => $this->userAgent,
-                    'Brand-Id' => $brandId,
-                    'Branch-Id' => $branchId,
-                ])
+                ->withHeaders($headers)
                 ->put($fullUrl, $payload);
 
             if (! $response->successful()) {
@@ -1522,7 +1536,7 @@ class CareemApiService
                     'response_body' => $responseBody,
                     'response_json' => $responseJson,
                     'headers_sent' => [
-                        'Authorization' => 'Bearer ' . substr($token, 0, 20) . '...',
+                        'Authorization' => 'Bearer '.substr($token, 0, 20).'...',
                         'User-Agent' => $this->userAgent,
                         'Brand-Id' => $brandId,
                         'Branch-Id' => $branchId,
@@ -1584,15 +1598,22 @@ class CareemApiService
         ]);
 
         try {
+            $headers = [
+                'Content-Type' => 'application/json',
+                'Accept' => 'application/json',
+                'User-Agent' => $this->userAgent,
+                'Brand-Id' => $brandId,
+                'Branch-Id' => $branchId,
+            ];
+
+            // Add x-careem-api-key header if configured
+            if ($this->apiKey) {
+                $headers['x-careem-api-key'] = $this->apiKey;
+            }
+
             $response = Http::timeout($this->timeout)
                 ->withToken($token)
-                ->withHeaders([
-                    'Content-Type' => 'application/json',
-                    'Accept' => 'application/json',
-                    'User-Agent' => $this->userAgent,
-                    'Brand-Id' => $brandId,
-                    'Branch-Id' => $branchId,
-                ])
+                ->withHeaders($headers)
                 ->put($fullUrl, $payload);
 
             if (! $response->successful()) {
@@ -1609,7 +1630,7 @@ class CareemApiService
                     'response_body' => $responseBody,
                     'response_json' => $responseJson,
                     'headers_sent' => [
-                        'Authorization' => 'Bearer ' . substr($token, 0, 20) . '...',
+                        'Authorization' => 'Bearer '.substr($token, 0, 20).'...',
                         'User-Agent' => $this->userAgent,
                         'Brand-Id' => $brandId,
                         'Branch-Id' => $branchId,
@@ -1673,7 +1694,7 @@ class CareemApiService
         ];
 
         if (! in_array($cancellationReason, $validReasons)) {
-            throw new \InvalidArgumentException("Invalid cancellation reason. Must be one of: ".implode(', ', $validReasons));
+            throw new \InvalidArgumentException('Invalid cancellation reason. Must be one of: '.implode(', ', $validReasons));
         }
 
         $this->logApiActivity('cancel_order_request', [
@@ -1684,15 +1705,22 @@ class CareemApiService
         ]);
 
         try {
+            $headers = [
+                'Content-Type' => 'application/json',
+                'Accept' => 'application/json',
+                'User-Agent' => $this->userAgent,
+                'Brand-Id' => $brandId,
+                'Branch-Id' => $branchId,
+            ];
+
+            // Add x-careem-api-key header if configured
+            if ($this->apiKey) {
+                $headers['x-careem-api-key'] = $this->apiKey;
+            }
+
             $response = Http::timeout($this->timeout)
                 ->withToken($token)
-                ->withHeaders([
-                    'Content-Type' => 'application/json',
-                    'Accept' => 'application/json',
-                    'User-Agent' => $this->userAgent,
-                    'Brand-Id' => $brandId,
-                    'Branch-Id' => $branchId,
-                ])
+                ->withHeaders($headers)
                 ->put($this->baseUrl.$endpoint, [
                     'state' => 'cancelled',
                     'cancellation_reason' => $cancellationReason,
@@ -1760,13 +1788,20 @@ class CareemApiService
         ]);
 
         try {
+            $headers = [
+                'User-Agent' => $this->userAgent,
+                'Brand-Id' => $brandId,
+                'Branch-Id' => $branchId,
+            ];
+
+            // Add x-careem-api-key header if configured
+            if ($this->apiKey) {
+                $headers['x-careem-api-key'] = $this->apiKey;
+            }
+
             $response = Http::timeout($this->timeout)
                 ->withToken($token)
-                ->withHeaders([
-                    'User-Agent' => $this->userAgent,
-                    'Brand-Id' => $brandId,
-                    'Branch-Id' => $branchId,
-                ])
+                ->withHeaders($headers)
                 ->put($this->baseUrl.$endpoint, [
                     'delay_in_minutes' => $delayMinutes,
                 ]);
@@ -1827,13 +1862,20 @@ class CareemApiService
         ]);
 
         try {
+            $headers = [
+                'User-Agent' => $this->userAgent,
+                'Brand-Id' => $brandId,
+                'Branch-Id' => $branchId,
+            ];
+
+            // Add x-careem-api-key header if configured
+            if ($this->apiKey) {
+                $headers['x-careem-api-key'] = $this->apiKey;
+            }
+
             $response = Http::timeout($this->timeout)
                 ->withToken($token)
-                ->withHeaders([
-                    'User-Agent' => $this->userAgent,
-                    'Brand-Id' => $brandId,
-                    'Branch-Id' => $branchId,
-                ])
+                ->withHeaders($headers)
                 ->get($this->baseUrl.$endpoint);
 
             if (! $response->successful()) {
@@ -1905,15 +1947,22 @@ class CareemApiService
         ]);
 
         try {
+            $headers = [
+                'Content-Type' => 'application/json',
+                'Accept' => 'application/json',
+                'User-Agent' => $this->userAgent,
+                'Brand-Id' => $brandId,
+                'Branch-Id' => $branchId,
+            ];
+
+            // Add x-careem-api-key header if configured
+            if ($this->apiKey) {
+                $headers['x-careem-api-key'] = $this->apiKey;
+            }
+
             $response = Http::timeout($this->timeout)
                 ->withToken($token)
-                ->withHeaders([
-                    'Content-Type' => 'application/json',
-                    'Accept' => 'application/json',
-                    'User-Agent' => $this->userAgent,
-                    'Brand-Id' => $brandId,
-                    'Branch-Id' => $branchId,
-                ])
+                ->withHeaders($headers)
                 ->get($this->baseUrl.$endpoint, [
                     'page_number' => $pageNumber,
                     'page_size' => min(max($pageSize, 1), 20), // Ensure between 1-20
@@ -2013,6 +2062,7 @@ class CareemApiService
 
                     if (! $branchId) {
                         $errors[] = "Branch '{$branchName}' has no ID";
+
                         continue;
                     }
 
@@ -2167,6 +2217,7 @@ class CareemApiService
             // Last resort: try full sync
             try {
                 $this->syncBranches($brandId, $tenantId);
+
                 return true;
             } catch (\Exception $e2) {
                 return false;
